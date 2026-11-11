@@ -38,8 +38,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 // INSERISCI SOLO I DUE VALORI PUBBLICI DI SUPABASE.
-const SUPABASE_URL = 'INCOLLA_QUI_URL_SUPABASE';
-const SUPABASE_PUBLISHABLE_KEY = 'INCOLLA_QUI_PUBLISHABLE_KEY';
+const SUPABASE_URL = 'https://tcbvwkzkfqlabzwvcyyv.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_-n5nbFtN5Xce-C_ZDhIcgQ_pFvIgt8m';
 const $ = id => document.getElementById(id);
 const show = (id,yes) => $(id).classList.toggle('hidden',!yes);
 const validConfig = /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(SUPABASE_URL) && SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_');
