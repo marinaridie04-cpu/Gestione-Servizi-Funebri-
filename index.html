@@ -2,70 +2,242 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gestione Servizi Funebri</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f3f5f9;
-      margin: 0;
-      padding: 20px;
-      color: #17243a;
-    }
-    h1 { text-align: center; }
-    .card {
-      background: white;
-      padding: 20px;
-      margin: 15px 0;
-      border-radius: 14px;
-      box-shadow: 0 2px 8px #0001;
-    }
-    button {
-      background: #183b68;
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 8px;
-      width: 100%;
-      font-size: 16px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestione Servizi Funebri</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#f2f5fa;color:#17243a;margin:0}
+header{background:#203b66;color:white;padding:22px 16px;text-align:center}
+header h1{font-size:23px;margin:0 0 7px}
+header p{margin:0;color:#dbe5f5;font-size:14px}
+main{max-width:720px;margin:auto;padding:16px}
+.card{background:white;border-radius:15px;padding:19px;margin-bottom:16px;box-shadow:0 2px 9px #0001}
+h2{font-size:20px;margin:0 0 18px}
+label{display:block;font-weight:bold;font-size:14px;margin:15px 0 6px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:white;color:#17243a}
+textarea{min-height:95px;resize:vertical}
+button{border:0;border-radius:9px;padding:13px 15px;font-size:15px;font-weight:bold;cursor:pointer}
+.primary{background:#203b66;color:white;width:100%;margin-top:20px}
+.secondary{background:#e7edf6;color:#203b66}
+.danger{background:#fee2e2;color:#991b1b}
+.actions{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
+.actions button{flex:1}
+.hidden{display:none}
+.service{border:1px solid #e1e7f0;border-radius:12px;padding:15px;margin-top:12px}
+.service h3{margin:0 0 12px}
+.service p{margin:7px 0;line-height:1.5;overflow-wrap:anywhere}
+.empty{color:#64748b;text-align:center;padding:18px}
+.small{font-size:13px;color:#64748b}
+</style>
 </head>
 <body>
-  <h1>Gestione Servizi Funebri</h1>
-  <p>Organizzazione dei servizi e del personale</p>
+<header>
+<h1>🚐 Gestione Servizi Funebri</h1>
+<p>Organizzazione servizi e personale</p>
+</header>
 
-  <div class="card">
-    <h2>📅 Servizi funebri</h2>
-    <p>Gestisci orari, luoghi e destinazioni.</p>
-    <button onclick="alert('Funzione in preparazione')">
-      Visualizza servizi
-    </button>
-  </div>
+<main>
+<section class="card">
+<h2>📋 Scheda servizio funebre</h2>
+<form id="form">
+<input type="hidden" id="serviceId">
 
-  <div class="card">
-    <h2>👥 Dipendenti</h2>
-    <p>Gestisci il personale disponibile.</p>
-    <button onclick="alert('Funzione in preparazione')">
-      Visualizza dipendenti
-    </button>
-  </div>
+<label>Data del servizio e ritrovo *</label>
+<input type="date" id="data" required>
 
-  <div class="card">
-    <h2>✅ Disponibilità</h2>
-    <p>Accetta o rifiuta le richieste di servizio.</p>
-    <button onclick="alert('Funzione in preparazione')">
-      Le mie richieste
-    </button>
-  </div>
+<label>Ora di ritrovo dei dipendenti *</label>
+<input type="time" id="ritrovo" required>
 
-  <div class="card">
-    <h2>🚐 Squadre</h2>
-    <p>Visualizza i colleghi assegnati ai servizi.</p>
-    <button onclick="alert('Funzione in preparazione')">
-      Visualizza squadre
-    </button>
-  </div>
+<label>Luogo di partenza *</label>
+<input type="text" id="partenza" required placeholder="Es. sede della Pubblica Assistenza">
+
+<label>Ora di partenza *</label>
+<input type="time" id="oraPartenza" required>
+
+<label>Funzione religiosa *</label>
+<select id="funzione" required>
+<option value="No">Assente</option>
+<option value="Sì">Presente</option>
+</select>
+
+<div id="datiFunzione" class="hidden">
+<label>Luogo della funzione *</label>
+<input type="text" id="luogoFunzione" placeholder="Es. Chiesa di San Pietro">
+
+<label>Ora della funzione *</label>
+<input type="time" id="oraFunzione">
+</div>
+
+<label>Cimitero di destinazione *</label>
+<input type="text" id="cimitero" required placeholder="Nome e località del cimitero">
+
+<label>Tipo di sepoltura *</label>
+<select id="sepoltura" required>
+<option value="">Seleziona</option>
+<option value="Loculo">Loculo</option>
+<option value="Terra">Terra</option>
+<option value="Cremazione">Cremazione</option>
+</select>
+
+<label>Note e comunicazioni aggiuntive</label>
+<textarea id="note" placeholder="Indicazioni per i dipendenti, comunicazioni, istruzioni..."></textarea>
+
+<button class="primary" type="submit" id="saveBtn">💾 Salva servizio</button>
+<button class="secondary hidden" type="button" id="cancelBtn" style="width:100%;margin-top:10px">Annulla modifica</button>
+</form>
+</section>
+
+<section class="card">
+<h2>📅 Servizi programmati</h2>
+<div id="lista"></div>
+</section>
+<p class="small">Versione di prova: i dati sono salvati soltanto su questo dispositivo e browser.</p>
+</main>
+
+<script>
+const KEY="gestione_servizi_funebri_v1";
+const $=id=>document.getElementById(id);
+let servizi=[];
+
+try{
+ const saved=JSON.parse(localStorage.getItem(KEY)||"[]");
+ servizi=Array.isArray(saved)?saved:[];
+}catch(e){servizi=[];}
+
+function salva(){
+ localStorage.setItem(KEY,JSON.stringify(servizi));
+}
+
+function aggiornaFunzione(){
+ const presente=$("funzione").value==="Sì";
+ $("datiFunzione").classList.toggle("hidden",!presente);
+ $("luogoFunzione").required=presente;
+ $("oraFunzione").required=presente;
+}
+
+$("funzione").addEventListener("change",aggiornaFunzione);
+
+function campo(id){return $(id).value.trim();}
+
+function resetForm(){
+ $("form").reset();
+ $("serviceId").value="";
+ $("saveBtn").textContent="💾 Salva servizio";
+ $("cancelBtn").classList.add("hidden");
+ aggiornaFunzione();
+}
+
+$("cancelBtn").addEventListener("click",resetForm);
+
+$("form").addEventListener("submit",function(e){
+ e.preventDefault();
+ const id=campo("serviceId");
+ const servizio={
+  id:id||String(Date.now())+Math.random().toString(36).slice(2),
+  data:campo("data"),
+  ritrovo:campo("ritrovo"),
+  partenza:campo("partenza"),
+  oraPartenza:campo("oraPartenza"),
+  funzione:campo("funzione"),
+  luogoFunzione:campo("funzione")==="Sì"?campo("luogoFunzione"):"",
+  oraFunzione:campo("funzione")==="Sì"?campo("oraFunzione"):"",
+  cimitero:campo("cimitero"),
+  sepoltura:campo("sepoltura"),
+  note:campo("note")
+ };
+ if(id){
+  servizi=servizi.map(s=>s.id===id?servizio:s);
+ }else{
+  servizi.push(servizio);
+ }
+ try{
+  salva();
+  resetForm();
+  mostra();
+  alert("Servizio salvato correttamente!");
+ }catch(err){
+  alert("Impossibile salvare i dati su questo dispositivo.");
+ }
+});
+
+function testo(tag,contenuto){
+ const el=document.createElement(tag);
+ el.textContent=contenuto;
+ return el;
+}
+
+function riga(box,titolo,valore){
+ const p=document.createElement("p");
+ const strong=testo("strong",titolo+": ");
+ p.append(strong,document.createTextNode(valore||"—"));
+ box.appendChild(p);
+}
+
+function modifica(id){
+ const s=servizi.find(x=>x.id===id);
+ if(!s)return;
+ ["data","ritrovo","partenza","oraPartenza","funzione",
+ "luogoFunzione","oraFunzione","cimitero","sepoltura","note"]
+ .forEach(k=>$(k).value=s[k]||"");
+ $("serviceId").value=s.id;
+ aggiornaFunzione();
+ $("saveBtn").textContent="💾 Salva modifiche";
+ $("cancelBtn").classList.remove("hidden");
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function elimina(id){
+ if(!confirm("Vuoi eliminare questo servizio?"))return;
+ servizi=servizi.filter(s=>s.id!==id);
+ salva();
+ mostra();
+}
+
+function mostra(){
+ const lista=$("lista");
+ lista.replaceChildren();
+ if(!servizi.length){
+  lista.appendChild(testo("p","Nessun servizio programmato."));
+  return;
+ }
+ const ordinati=[...servizi].sort((a,b)=>
+  (a.data+" "+a.ritrovo).localeCompare(b.data+" "+b.ritrovo)
+ );
+ ordinati.forEach(s=>{
+  const box=document.createElement("div");
+  box.className="service";
+  const data=s.data?s.data.split("-").reverse().join("/"):"—";
+  box.appendChild(testo("h3","📅 "+data));
+  riga(box,"Ritrovo dipendenti",s.ritrovo);
+  riga(box,"Partenza",s.partenza+" – ore "+s.oraPartenza);
+  riga(box,"Funzione religiosa",s.funzione);
+  if(s.funzione==="Sì"){
+   riga(box,"Luogo funzione",s.luogoFunzione);
+   riga(box,"Ora funzione",s.oraFunzione);
+  }
+  riga(box,"Cimitero",s.cimitero);
+  riga(box,"Sepoltura",s.sepoltura);
+  riga(box,"Note",s.note);
+
+  const actions=document.createElement("div");
+  actions.className="actions";
+  const edit=document.createElement("button");
+  edit.className="secondary";
+  edit.textContent="✏️ Modifica";
+  edit.onclick=()=>modifica(s.id);
+  const del=document.createElement("button");
+  del.className="danger";
+  del.textContent="🗑️ Elimina";
+  del.onclick=()=>elimina(s.id);
+  actions.append(edit,del);
+  box.appendChild(actions);
+  lista.appendChild(box);
+ });
+}
+
+aggiornaFunzione();
+mostra();
+</script>
 </body>
 </html>
