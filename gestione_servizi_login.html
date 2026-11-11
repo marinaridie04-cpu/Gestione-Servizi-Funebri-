@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gestione Servizi Funebri</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f5fa;color:#17243a;font-family:Arial,sans-serif}header{background:#203b66;color:white;padding:23px 16px;text-align:center}header h1{font-size:23px;margin:0 0 7px}header p{font-size:14px;margin:0;color:#dfebfa}main{max-width:720px;margin:auto;padding:16px}.card{background:white;border-radius:15px;padding:20px;margin-bottom:15px;box-shadow:0 2px 9px #0001}h2{font-size:21px;margin:0 0 18px}h3{font-size:17px}label{display:block;font-size:14px;font-weight:bold;margin:14px 0 6px}input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:12px;font:inherit;color:#17243a;background:white}textarea{min-height:95px}button{border:0;border-radius:9px;padding:13px 15px;font-size:15px;font-weight:bold;cursor:pointer}.primary{background:#203b66;color:white;width:100%;margin-top:17px}.secondary{background:#e7edf6;color:#203b66}.danger{background:#fee2e2;color:#991b1b}.hidden{display:none!important}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}.actions button{flex:1}.service{padding:15px;border:1px solid #e1e7f0;border-radius:12px;margin:12px 0}.service p{line-height:1.5;overflow-wrap:anywhere}.muted{font-size:13px;color:#64748b}.status{background:#f2f5fa;border-radius:9px;padding:12px;white-space:pre-wrap}.dangerText{color:#9b1c1c}#logout{margin-top:12px} 
+</style>
+</head>
+<body>
+<header><h1>🚐 Gestione Servizi Funebri</h1><p>Organizzazione dei servizi e del personale</p></header>
+<main>
+<section id="setup" class="card hidden"><h2>Configurazione necessaria</h2><p>Inserisci nel codice l'URL del progetto Supabase e la sua Publishable key. Non inserire mai la Secret key.</p></section>
+<section id="loginSection" class="card hidden"><h2>🔐 Accesso personale</h2><form id="loginForm"><label>Email</label><input id="email" type="email" autocomplete="username" required><label>Password</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" type="submit">Accedi</button></form><p id="loginMessage" class="status hidden" role="status"></p></section>
+<section id="appSection" class="hidden">
+<div class="card"><div id="welcome"></div><button id="logout" class="secondary" type="button">Esci dall'account</button></div>
+<section id="adminSection" class="card hidden">
+<h2>📋 Nuovo servizio funebre</h2>
+<form id="serviceForm"><input type="hidden" id="serviceId">
+<label>Data del servizio *</label><input id="data" type="date" required>
+<label>Ora di ritrovo dei dipendenti *</label><input id="ritrovo" type="time" required>
+<label>Luogo di partenza *</label><input id="partenza" type="text" required placeholder="Es. sede Pubblica Assistenza">
+<label>Ora di partenza *</label><input id="oraPartenza" type="time" required>
+<label>Funzione religiosa *</label><select id="funzione"><option value="false">Assente</option><option value="true">Presente</option></select>
+<div id="datiFunzione" class="hidden"><label>Luogo della funzione *</label><input id="luogoFunzione" type="text" placeholder="Es. Chiesa di San Pietro"><label>Ora della funzione *</label><input id="oraFunzione" type="time"></div>
+<label>Cimitero di destinazione *</label><input id="cimitero" type="text" required placeholder="Nome e località del cimitero">
+<label>Tipo di sepoltura *</label><select id="sepoltura" required><option value="">Seleziona</option><option value="loculo">Loculo</option><option value="terra">Terra</option><option value="cremazione">Cremazione</option></select>
+<label>Note e comunicazioni aggiuntive</label><textarea id="note" placeholder="Comunicazioni per i dipendenti..."></textarea>
+<button class="primary" type="submit" id="saveBtn">💾 Salva servizio</button><button type="button" id="cancelEdit" class="secondary hidden" style="width:100%;margin-top:9px">Annulla modifica</button>
+</form></section>
+<section class="card"><h2>📅 Servizi</h2><div id="servicesList"></div></section>
+<section class="card"><h2>✅ Richieste di disponibilità</h2><div id="requestsList"></div></section>
+<section class="card"><h2>👥 Le mie squadre</h2><div id="teamsList"></div></section>
+<p class="muted">Versione di prova. Non utilizzare dati reali finché accessi e permessi non sono stati verificati con più account.</p>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// INSERISCI SOLO I DUE VALORI PUBBLICI DI SUPABASE.
+const SUPABASE_URL = 'INCOLLA_QUI_URL_SUPABASE';
+const SUPABASE_PUBLISHABLE_KEY = 'INCOLLA_QUI_PUBLISHABLE_KEY';
+const $ = id => document.getElementById(id);
+const show = (id,yes) => $(id).classList.toggle('hidden',!yes);
+const validConfig = /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(SUPABASE_URL) && SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_');
+let db,profile,session;
+const setMessage=(id,msg)=>{$(id).textContent=msg;show(id,!!msg)};
+function line(box,title,value){let p=document.createElement('p');let b=document.createElement('strong');b.textContent=title+': ';p.append(b,document.createTextNode(value??'—'));box.append(p)}
+function paragraph(box,value){let p=document.createElement('p');p.textContent=value;box.append(p)}
+function errorText(e){return e?.message||'Operazione non riuscita'}
+function toggleFunzione(){const yes=$('funzione').value==='true';show('datiFunzione',yes);$('luogoFunzione').required=yes;$('oraFunzione').required=yes}
+$('funzione').addEventListener('change',toggleFunzione);
+function clearForm(){$('serviceForm').reset();$('serviceId').value='';$('saveBtn').textContent='💾 Salva servizio';show('cancelEdit',false);toggleFunzione()}
+$('cancelEdit').onclick=clearForm;
+function dateIt(s){return s?String(s).split('-').reverse().join('/'):'—'}
+function button(label,cls,fn){let b=document.createElement('button');b.type='button';b.className=cls;b.textContent=label;b.onclick=fn;return b}
+async function start(){if(!validConfig || !window.supabase){show('setup',true);return}db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);const result=await db.auth.getSession();if(result.error){setMessage('loginMessage',errorText(result.error));show('loginSection',true);return}await renderAuth(result.data.session)}
+async function renderAuth(s){session=s;show('loginSection',!s);show('appSection',false);if(!s)return;const result=await db.from('profili').select('nome,cognome,ruolo').eq('id',s.user.id).maybeSingle();if(result.error||!result.data){await db.auth.signOut();show('loginSection',true);setMessage('loginMessage','Profilo non autorizzato o non configurato.');return}profile=result.data;$('welcome').textContent='Accesso: '+profile.nome+' '+profile.cognome+' — '+profile.ruolo;show('loginSection',false);show('appSection',true);show('adminSection',profile.ruolo==='amministratore');await loadAll()}
+$('loginForm').onsubmit=async(e)=>{e.preventDefault();setMessage('loginMessage','Accesso in corso...');const r=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});$('password').value='';if(r.error){setMessage('loginMessage',errorText(r.error));return}setMessage('loginMessage','');await renderAuth(r.data.session)};
+$('logout').onclick=async()=>{await db.auth.signOut();profile=null;session=null;show('appSection',false);show('loginSection',true)};
+async function loadAll(){await Promise.all([loadServices(),loadRequests(),loadTeams()])}
+async function loadServices(){let target=$('servicesList');target.replaceChildren();const r=await db.from('servizi').select('*').order('data_servizio',{ascending:true});if(r.error){paragraph(target,'Errore: '+errorText(r.error));return}if(!r.data.length){paragraph(target,'Nessun servizio visibile.');return}for(const s of r.data){let box=document.createElement('div');box.className='service';let h=document.createElement('h3');h.textContent='📅 '+dateIt(s.data_servizio);box.append(h);line(box,'Ritrovo',s.ora_ritrovo);line(box,'Partenza',s.luogo_partenza+' — ore '+s.ora_partenza);line(box,'Funzione religiosa',s.funzione_religiosa?'Presente':'Assente');if(s.funzione_religiosa){line(box,'Luogo della funzione',s.luogo_funzione);line(box,'Ora della funzione',s.ora_funzione)}line(box,'Cimitero',s.cimitero);line(box,'Sepoltura',s.tipo_sepoltura);line(box,'Note',s.note||'—');if(profile.ruolo==='amministratore'){let a=document.createElement('div');a.className='actions';a.append(button('✏️ Modifica','secondary',()=>editService(s)),button('🗑️ Elimina','danger',()=>removeService(s.id)));box.append(a)}target.append(box)}}
+function editService(s){const fields={serviceId:s.id,data:s.data_servizio,ritrovo:s.ora_ritrovo,partenza:s.luogo_partenza,oraPartenza:s.ora_partenza,funzione:String(s.funzione_religiosa),luogoFunzione:s.luogo_funzione||'',oraFunzione:s.ora_funzione||'',cimitero:s.cimitero,sepoltura:s.tipo_sepoltura,note:s.note||''};for(let k in fields)$(k).value=fields[k];$('saveBtn').textContent='💾 Salva modifiche';show('cancelEdit',true);toggleFunzione();scrollTo({top:0,behavior:'smooth'})}
+async function removeService(id){if(!confirm('Eliminare questo servizio?'))return;const r=await db.from('servizi').delete().eq('id',id);if(r.error)alert(errorText(r.error));else await loadAll()}
+$('serviceForm').onsubmit=async(e)=>{e.preventDefault();if(!profile||profile.ruolo!=='amministratore')return;const present=$('funzione').value==='true';const data={data_servizio:$('data').value,ora_ritrovo:$('ritrovo').value,luogo_partenza:$('partenza').value.trim(),ora_partenza:$('oraPartenza').value,funzione_religiosa:present,luogo_funzione:present?$('luogoFunzione').value.trim():null,ora_funzione:present?$('oraFunzione').value:null,cimitero:$('cimitero').value.trim(),tipo_sepoltura:$('sepoltura').value,note:$('note').value.trim()};const id=$('serviceId').value;let r=id?await db.from('servizi').update(data).eq('id',id):await db.from('servizi').insert(data);if(r.error){alert('Errore: '+errorText(r.error));return}clearForm();await loadServices();alert('Servizio salvato')};
+async function loadRequests(){let target=$('requestsList');target.replaceChildren();const r=await db.from('richieste').select('id,servizio_id,dipendente_id,stato').order('aggiornata_il',{ascending:false});if(r.error){paragraph(target,'Errore: '+errorText(r.error));return}if(!r.data.length){paragraph(target,'Nessuna richiesta ricevuta.');return}for(const q of r.data){let box=document.createElement('div');box.className='service';line(box,'Servizio',q.servizio_id);line(box,'Stato',q.stato.replace('_',' '));if(profile.ruolo==='amministratore')line(box,'Dipendente',q.dipendente_id);if(profile.ruolo==='dipendente'&&q.stato==='in_attesa'){let actions=document.createElement('div');actions.className='actions';actions.append(button('✅ Disponibile','secondary',()=>respond(q,'accettata')),button('❌ Non disponibile','danger',()=>respond(q,'rifiutata')));box.append(actions)}target.append(box)}}
+async function respond(q,state){if(!confirm('Confermi la risposta?'))return;const r=await db.from('richieste').update({stato:state}).eq('id',q.id).eq('dipendente_id',session.user.id).eq('stato','in_attesa').select('id');if(r.error){alert('Errore: '+errorText(r.error));return}if(!r.data.length){alert('Risposta non aggiornata');return}await loadRequests()}
+async function loadTeams(){const target=$('teamsList');target.replaceChildren();const r=await db.from('squadre').select('servizio_id,dipendente_id');if(r.error){paragraph(target,'Errore: '+errorText(r.error));return}if(!r.data.length){paragraph(target,'Nessuna squadra assegnata.');return}const ids=[...new Set(r.data.map(x=>x.dipendente_id))];const names=await db.from('profili').select('id,nome,cognome').in('id',ids);const map=new Map((names.data||[]).map(p=>[p.id,p.nome+' '+p.cognome]));const grouped={};for(const a of r.data)(grouped[a.servizio_id]??=[]).push(map.get(a.dipendente_id)||'Dipendente');for(const [id,members] of Object.entries(grouped)){let box=document.createElement('div');box.className='service';line(box,'Servizio',id);line(box,'Squadra',members.join(', '));target.append(box)}}
+start();
+</script>
+</body>
+</html>
