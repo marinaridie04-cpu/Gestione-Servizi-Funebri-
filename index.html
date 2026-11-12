@@ -30,6 +30,22 @@
 <button class="primary" type="submit" id="saveBtn">💾 Salva servizio</button><button type="button" id="cancelEdit" class="secondary hidden" style="width:100%;margin-top:9px">Annulla modifica</button>
 </form></section>
 <section class="card"><h2>📅 Servizi</h2><div id="servicesList"></div></section>
+  
+<section id="invitiSection" class="card hidden">
+  <h2>📨 Invia richieste di disponibilità</h2>
+
+  <label>Seleziona il servizio</label>
+  <select id="servizioRichiesta">
+    <option value="">Seleziona un servizio</option>
+  </select>
+
+  <label>Dipendenti a cui inviare la richiesta</label>
+  <div id="elencoDipendenti"></div>
+
+  <button type="button" class="primary" id="inviaRichieste">
+    📨 Invia richieste
+  </button>
+</section>
 <section class="card"><h2>✅ Richieste di disponibilità</h2><div id="requestsList"></div></section>
 <section class="card"><h2>👥 Le mie squadre</h2><div id="teamsList"></div></section>
 <p class="muted">Versione di prova. Non utilizzare dati reali finché accessi e permessi non sono stati verificati con più account.</p>
