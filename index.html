@@ -622,7 +622,7 @@ async function caricaInviti(){
   elenco.replaceChildren();
 
   const [servizi,dipendenti]=await Promise.all([
-    db.from('servizi').select('id,data_servizio,luogo_partenza').order('data_servizio'),
+    db.from('servizi').select('id,data_servizio,tipo_servizio,nome_defunto').order('data_servizio'),
     db.from('profili').select('id,nome,cognome').eq('ruolo','dipendente')
   ]);
 
@@ -631,9 +631,24 @@ async function caricaInviti(){
     return;
   }
 
-  for(const s of servizi.data){
-    sel.add(new Option(dateIt(s.data_servizio)+' - '+s.luogo_partenza,s.id));
-  }
+  
+for (const s of servizi.data) {
+  const nomi = {
+    funerale: '⚰️ Funerale',
+    trasferimento: '🚐 Trasferimento',
+    vestizione: '👔 Vestizione'
+  };
+
+  const tipo = s.tipo_servizio || 'funerale';
+  const defunto = s.nome_defunto || 'Nome non inserito';
+
+  sel.add(new Option(
+    (nomi[tipo] || tipo) +
+    ' — ' + defunto +
+    ' — ' + dateIt(s.data_servizio),
+    s.id
+  ));
+}
 
   if(!dipendenti.data.length){
     paragraph(elenco,'Nessun dipendente registrato.');
