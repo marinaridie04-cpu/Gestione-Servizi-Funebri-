@@ -137,7 +137,39 @@ $('loginForm').onsubmit=async(e)=>{e.preventDefault();setMessage('loginMessage',
 $('logout').onclick=async()=>{await db.auth.signOut();profile=null;session=null;show('appSection',false);show('loginSection',true)};
 async function loadAll(){await Promise.all([loadServices(),loadRequests(),loadTeams(),caricaInviti()])}
 async function loadServices(){let target=$('servicesList');target.replaceChildren();const r=await db.from('servizi').select('*').order('data_servizio',{ascending:true});if(r.error){paragraph(target,'Errore: '+errorText(r.error));return}if(!r.data.length){paragraph(target,'Nessun servizio visibile.');return}for(const s of r.data){let box=document.createElement('div');box.className='service';let h=document.createElement('h3');h.textContent='📅 '+dateIt(s.data_servizio);box.append(h);line(box,'Ritrovo',s.ora_ritrovo);line(box,'Partenza',s.luogo_partenza+' — ore '+s.ora_partenza);line(box,'Funzione religiosa',s.funzione_religiosa?'Presente':'Assente');if(s.funzione_religiosa){line(box,'Luogo della funzione',s.luogo_funzione);line(box,'Ora della funzione',s.ora_funzione)}line(box,'Cimitero',s.cimitero);line(box,'Sepoltura',s.tipo_sepoltura);line(box,'Note',s.note||'—');if(profile.ruolo==='amministratore'){let a=document.createElement('div');a.className='actions';a.append(button('✏️ Modifica','secondary',()=>editService(s)),button('🗑️ Elimina','danger',()=>removeService(s.id)));box.append(a)}target.append(box)}}
-function editService(s){const fields={serviceId:s.id,data:s.data_servizio,ritrovo:s.ora_ritrovo,partenza:s.luogo_partenza,oraPartenza:s.ora_partenza,funzione:String(s.funzione_religiosa),luogoFunzione:s.luogo_funzione||'',oraFunzione:s.ora_funzione||'',cimitero:s.cimitero,sepoltura:s.tipo_sepoltura,note:s.note||''};for(let k in fields)$(k).value=fields[k];$('saveBtn').textContent='💾 Salva modifiche';show('cancelEdit',true);toggleFunzione();scrollTo({top:0,behavior:'smooth'})}
+function editService(s) {
+  $('serviceId').value = s.id;
+  $('tipoServizio').value = s.tipo_servizio || 'funerale';
+  $('data').value = s.data_servizio || '';
+
+  $('ritrovo').value = s.ora_ritrovo || '';
+  $('partenza').value = s.luogo_partenza || '';
+  $('oraPartenza').value = s.ora_partenza || '';
+
+  $('funzione').value = String(!!s.funzione_religiosa);
+  $('luogoFunzione').value = s.luogo_funzione || '';
+  $('oraFunzione').value = s.ora_funzione || '';
+
+  $('cimitero').value = s.cimitero || '';
+  $('sepoltura').value = s.tipo_sepoltura || '';
+
+  $('oraServizio').value = s.ora_servizio || '';
+  $('luogoServizio').value = s.luogo_servizio || '';
+  $('linkMaps').value = s.link_maps || '';
+
+  $('note').value = s.note || '';
+
+  toggleTipoServizio();
+
+  $('saveBtn').textContent = '💾 Salva modifiche';
+  show('cancelEdit', true);
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+}
+
 async function removeService(id){if(!confirm('Eliminare questo servizio?'))return;const r=await db.from('servizi').delete().eq('id',id);if(r.error)alert(errorText(r.error));else await loadAll()}
 $('serviceForm').onsubmit = async (e) => {
   e.preventDefault();
