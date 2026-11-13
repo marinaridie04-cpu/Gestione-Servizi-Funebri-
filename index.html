@@ -79,7 +79,110 @@ async function loadServices(){let target=$('servicesList');target.replaceChildre
 function editService(s){const fields={serviceId:s.id,data:s.data_servizio,ritrovo:s.ora_ritrovo,partenza:s.luogo_partenza,oraPartenza:s.ora_partenza,funzione:String(s.funzione_religiosa),luogoFunzione:s.luogo_funzione||'',oraFunzione:s.ora_funzione||'',cimitero:s.cimitero,sepoltura:s.tipo_sepoltura,note:s.note||''};for(let k in fields)$(k).value=fields[k];$('saveBtn').textContent='💾 Salva modifiche';show('cancelEdit',true);toggleFunzione();scrollTo({top:0,behavior:'smooth'})}
 async function removeService(id){if(!confirm('Eliminare questo servizio?'))return;const r=await db.from('servizi').delete().eq('id',id);if(r.error)alert(errorText(r.error));else await loadAll()}
 $('serviceForm').onsubmit=async(e)=>{e.preventDefault();if(!profile||profile.ruolo!=='amministratore')return;const present=$('funzione').value==='true';const data={data_servizio:$('data').value,ora_ritrovo:$('ritrovo').value,luogo_partenza:$('partenza').value.trim(),ora_partenza:$('oraPartenza').value,funzione_religiosa:present,luogo_funzione:present?$('luogoFunzione').value.trim():null,ora_funzione:present?$('oraFunzione').value:null,cimitero:$('cimitero').value.trim(),tipo_sepoltura:$('sepoltura').value,note:$('note').value.trim()};const id=$('serviceId').value;let r=id?await db.from('servizi').update(data).eq('id',id):await db.from('servizi').insert(data);if(r.error){alert('Errore: '+errorText(r.error));return}clearForm();await loadAll();alert('Servizio salvato')};
-async function loadRequests(){let target=$('requestsList');target.replaceChildren();const r=await db.from('richieste').select('id,servizio_id,dipendente_id,stato').order('aggiornata_il',{ascending:false});if(r.error){paragraph(target,'Errore: '+errorText(r.error));return}if(!r.data.length){paragraph(target,'Nessuna richiesta ricevuta.');return}for(const q of r.data){let box=document.createElement('div');box.className='service';line(box,'Servizio',q.servizio_id);line(box,'Stato',q.stato.replace('_',' '));if(profile.ruolo==='amministratore')line(box,'Dipendente',q.dipendente_id);if(profile.ruolo==='dipendente'&&q.stato==='in_attesa'){let actions=document.createElement('div');actions.className='actions';actions.append(button('✅ Disponibile','secondary',()=>respond(q,'accettata')),button('❌ Non disponibile','danger',()=>respond(q,'rifiutata')));box.append(actions)}target.append(box)}}
+async function loadRequests() {
+  const target = $('requestsList');
+  target.replaceChildren();
+
+  const r = await db.from('richieste')
+    .select('id,servizio_id,dipendente_id,stato')
+    .order('aggiornata_il', {ascending:false});
+
+  if (r.error) {
+    paragraph(target, 'Errore: ' + errorText(r.error));
+    return;
+  }
+
+  if (!r.data.length) {
+    paragraph(target, 'Nessuna richiesta ricevuta.');
+    return;
+  }
+
+  const idsServizi = [...new Set(
+    r.data.map(q => q.servizio_id)
+  )];
+
+  const servizi = await db.from('servizi')
+    .select('id,data_servizio,luogo_partenza')
+    .in('id', idsServizi);
+
+  if (servizi.error) {
+    paragraph(target, 'Errore: ' + errorText(servizi.error));
+    return;
+  }
+
+  const mappaServizi = new Map(
+    servizi.data.map(s => [s.id, s])
+  );
+
+  let mappaNomi = new Map();
+
+  if (profile.ruolo === 'amministratore') {
+    const idsDipendenti = [...new Set(
+      r.data.map(q => q.dipendente_id)
+    )];
+
+    const nomi = await db.from('profili')
+      .select('id,nome,cognome')
+      .in('id', idsDipendenti);
+
+    if (nomi.error) {
+      paragraph(target, 'Errore: ' + errorText(nomi.error));
+      return;
+    }
+
+    mappaNomi = new Map(
+      nomi.data.map(p => [
+        p.id, p.nome + ' ' + p.cognome
+      ])
+    );
+  }
+
+  for (const q of r.data) {
+    const box = document.createElement('div');
+    box.className = 'service';
+
+    const s = mappaServizi.get(q.servizio_id);
+
+    line(box, 'Servizio',
+      s ? dateIt(s.data_servizio) : 'Non disponibile');
+
+    if (s) {
+      line(box, 'Luogo di partenza', s.luogo_partenza);
+    }
+
+    if (profile.ruolo === 'amministratore') {
+      line(box, 'Dipendente',
+        mappaNomi.get(q.dipendente_id) || 'Non disponibile');
+    }
+
+    const stati = {
+      in_attesa: '⏳ In attesa',
+      accettata: '✅ Accettata',
+      rifiutata: '❌ Non disponibile'
+    };
+
+    line(box, 'Stato', stati[q.stato] || q.stato);
+
+    if (
+      profile.ruolo === 'dipendente' &&
+      q.stato === 'in_attesa'
+    ) {
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+
+      actions.append(
+        button('✅ Disponibile', 'secondary',
+          () => respond(q, 'accettata')),
+        button('❌ Non disponibile', 'danger',
+          () => respond(q, 'rifiutata'))
+      );
+
+      box.append(actions);
+    }
+
+    target.append(box);
+  }
+}
 async function respond(q,state){if(!confirm('Confermi la risposta?'))return;const r=await db.from('richieste').update({stato:state}).eq('id',q.id).eq('dipendente_id',session.user.id).eq('stato','in_attesa').select('id');if(r.error){alert('Errore: '+errorText(r.error));return}if(!r.data.length){alert('Risposta non aggiornata');return}await loadRequests()}
 async function loadTeams() {
   const target = $('teamsList');
