@@ -16,8 +16,18 @@
 <section id="appSection" class="hidden">
 <div class="card"><div id="welcome"></div><button id="logout" class="secondary" type="button">Esci dall'account</button></div>
 <section id="adminSection" class="card hidden">
-<h2>📋 Nuovo servizio funebre</h2>
-<form id="serviceForm"><input type="hidden" id="serviceId">
+
+<h2>📋 Nuovo servizio</h2>
+
+<form id="serviceForm">
+<input type="hidden" id="serviceId">
+
+<label>Tipologia del servizio *</label>
+<select id="tipoServizio" required>
+  <option value="funerale">⚰️ Funerale</option>
+  <option value="trasferimento">🚐 Trasferimento</option>
+  <option value="vestizione">👔 Vestizione</option>
+</select>
 <label>Data del servizio *</label><input id="data" type="date" required>
 <label>Ora di ritrovo dei dipendenti *</label><input id="ritrovo" type="time" required>
 <label>Luogo di partenza *</label><input id="partenza" type="text" required placeholder="Es. sede Pubblica Assistenza">
