@@ -29,6 +29,13 @@
   <option value="vestizione">👔 Vestizione</option>
 </select>
 <label>Data del servizio *</label><input id="data" type="date" required>
+<label>Nome e cognome del defunto *</label>
+<input
+  id="nomeDefunto"
+  type="text"
+  placeholder="Es. Mario Rossi"
+  required
+>
 <div id="campiFunerale">
 <label>Ora di ritrovo dei dipendenti *</label><input id="ritrovo" type="time" required>
 <label>Luogo di partenza *</label><input id="partenza" type="text" required placeholder="Es. sede Pubblica Assistenza">
@@ -239,7 +246,7 @@ function editService(s) {
   $('serviceId').value = s.id;
   $('tipoServizio').value = s.tipo_servizio || 'funerale';
   $('data').value = s.data_servizio || '';
-
+  $('nomeDefunto').value = s.nome_defunto || '';
   $('ritrovo').value = s.ora_ritrovo || '';
   $('partenza').value = s.luogo_partenza || '';
   $('oraPartenza').value = s.ora_partenza || '';
@@ -281,6 +288,7 @@ $('serviceForm').onsubmit = async (e) => {
   const data = {
     tipo_servizio: tipo,
     data_servizio: $('data').value,
+    nome_defunto: $('nomeDefunto').value.trim(),
     note: $('note').value.trim(),
 
     ora_ritrovo: funerale ? $('ritrovo').value : null,
@@ -344,7 +352,7 @@ const r = await query.order('aggiornata_il', {
   )];
 
   const servizi = await db.from('servizi')
-    .select('id,data_servizio,luogo_partenza')
+    .select('id,data_servizio,tipo_servizio,nome_defunto,luogo_partenza,luogo_servizio')
     .in('id', idsServizi);
 
   if (servizi.error) {
@@ -389,8 +397,19 @@ const r = await query.order('aggiornata_il', {
       s ? dateIt(s.data_servizio) : 'Non disponibile');
 
     if (s) {
-      line(box, 'Luogo di partenza', s.luogo_partenza);
-    }
+  const tipo = s.tipo_servizio || 'funerale';
+
+  line(box, 'Tipo di servizio',
+    tipo.charAt(0).toUpperCase() + tipo.slice(1));
+
+  line(box, 'Nome del defunto',
+    s.nome_defunto || 'Non indicato');
+
+  line(box, 'Luogo',
+    tipo === 'funerale'
+      ? s.luogo_partenza
+      : s.luogo_servizio);
+}
 
     if (profile.ruolo === 'amministratore') {
       line(box, 'Dipendente',
