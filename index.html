@@ -29,6 +29,7 @@
   <option value="vestizione">👔 Vestizione</option>
 </select>
 <label>Data del servizio *</label><input id="data" type="date" required>
+<div id="campiFunerale">
 <label>Ora di ritrovo dei dipendenti *</label><input id="ritrovo" type="time" required>
 <label>Luogo di partenza *</label><input id="partenza" type="text" required placeholder="Es. sede Pubblica Assistenza">
 <label>Ora di partenza *</label><input id="oraPartenza" type="time" required>
@@ -36,6 +37,20 @@
 <div id="datiFunzione" class="hidden"><label>Luogo della funzione *</label><input id="luogoFunzione" type="text" placeholder="Es. Chiesa di San Pietro"><label>Ora della funzione *</label><input id="oraFunzione" type="time"></div>
 <label>Cimitero di destinazione *</label><input id="cimitero" type="text" required placeholder="Nome e località del cimitero">
 <label>Tipo di sepoltura *</label><select id="sepoltura" required><option value="">Seleziona</option><option value="loculo">Loculo</option><option value="terra">Terra</option><option value="cremazione">Cremazione</option></select>
+</div>
+  
+<div id="campiSemplici" class="hidden">
+  <label>Ora del servizio *</label>
+  <input id="oraServizio" type="time">
+
+  <label>Luogo del servizio *</label>
+  <input id="luogoServizio" type="text"
+    placeholder="Inserisci l'indirizzo">
+
+  <label>Link alla posizione su Maps</label>
+  <input id="linkMaps" type="url"
+    placeholder="https://maps.google.com/...">
+</div>
 <label>Note e comunicazioni aggiuntive</label><textarea id="note" placeholder="Comunicazioni per i dipendenti..."></textarea>
 <button class="primary" type="submit" id="saveBtn">💾 Salva servizio</button><button type="button" id="cancelEdit" class="secondary hidden" style="width:100%;margin-top:9px">Annulla modifica</button>
 </form></section>
@@ -76,6 +91,36 @@ function paragraph(box,value){let p=document.createElement('p');p.textContent=va
 function errorText(e){return e?.message||'Operazione non riuscita'}
 function toggleFunzione(){const yes=$('funzione').value==='true';show('datiFunzione',yes);$('luogoFunzione').required=yes;$('oraFunzione').required=yes}
 $('funzione').addEventListener('change',toggleFunzione);
+
+function toggleTipoServizio() {
+  const funerale = $('tipoServizio').value === 'funerale';
+
+  show('campiFunerale', funerale);
+  show('campiSemplici', !funerale);
+
+  $('ritrovo').required = funerale;
+  $('partenza').required = funerale;
+  $('oraPartenza').required = funerale;
+  $('cimitero').required = funerale;
+  $('sepoltura').required = funerale;
+
+  $('oraServizio').required = !funerale;
+  $('luogoServizio').required = !funerale;
+
+  if (funerale) {
+    toggleFunzione();
+  } else {
+    $('luogoFunzione').required = false;
+    $('oraFunzione').required = false;
+  }
+}
+
+$('tipoServizio').addEventListener(
+  'change',
+  toggleTipoServizio
+);
+
+toggleTipoServizio();
 function clearForm(){$('serviceForm').reset();$('serviceId').value='';$('saveBtn').textContent='💾 Salva servizio';show('cancelEdit',false);toggleFunzione()}
 $('cancelEdit').onclick=clearForm;
 function dateIt(s){return s?String(s).split('-').reverse().join('/'):'—'}
