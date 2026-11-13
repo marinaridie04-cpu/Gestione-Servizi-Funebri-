@@ -177,7 +177,8 @@ async function loadServices() {
     h.textContent = (nomi[tipo] || tipo) +
       ' — ' + dateIt(s.data_servizio);
     box.append(h);
-
+    line(box, 'Nome del defunto',
+  s.nome_defunto || 'Non indicato');
     if (tipo === 'funerale') {
       line(box, 'Ora di ritrovo', s.ora_ritrovo);
 
