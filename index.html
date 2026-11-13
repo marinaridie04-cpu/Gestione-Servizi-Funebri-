@@ -136,7 +136,105 @@ async function renderAuth(s){session=s;show('loginSection',!s);show('appSection'
 $('loginForm').onsubmit=async(e)=>{e.preventDefault();setMessage('loginMessage','Accesso in corso...');const r=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});$('password').value='';if(r.error){setMessage('loginMessage',errorText(r.error));return}setMessage('loginMessage','');await renderAuth(r.data.session)};
 $('logout').onclick=async()=>{await db.auth.signOut();profile=null;session=null;show('appSection',false);show('loginSection',true)};
 async function loadAll(){await Promise.all([loadServices(),loadRequests(),loadTeams(),caricaInviti()])}
-async function loadServices(){let target=$('servicesList');target.replaceChildren();const r=await db.from('servizi').select('*').order('data_servizio',{ascending:true});if(r.error){paragraph(target,'Errore: '+errorText(r.error));return}if(!r.data.length){paragraph(target,'Nessun servizio visibile.');return}for(const s of r.data){let box=document.createElement('div');box.className='service';let h=document.createElement('h3');h.textContent='📅 '+dateIt(s.data_servizio);box.append(h);line(box,'Ritrovo',s.ora_ritrovo);line(box,'Partenza',s.luogo_partenza+' — ore '+s.ora_partenza);line(box,'Funzione religiosa',s.funzione_religiosa?'Presente':'Assente');if(s.funzione_religiosa){line(box,'Luogo della funzione',s.luogo_funzione);line(box,'Ora della funzione',s.ora_funzione)}line(box,'Cimitero',s.cimitero);line(box,'Sepoltura',s.tipo_sepoltura);line(box,'Note',s.note||'—');if(profile.ruolo==='amministratore'){let a=document.createElement('div');a.className='actions';a.append(button('✏️ Modifica','secondary',()=>editService(s)),button('🗑️ Elimina','danger',()=>removeService(s.id)));box.append(a)}target.append(box)}}
+async function loadServices() {
+  const target = $('servicesList');
+  target.replaceChildren();
+
+  const r = await db.from('servizi')
+    .select('*')
+    .order('data_servizio', { ascending: true });
+
+  if (r.error) {
+    paragraph(target, 'Errore: ' + errorText(r.error));
+    return;
+  }
+
+  if (!r.data.length) {
+    paragraph(target, 'Nessun servizio visibile.');
+    return;
+  }
+
+  for (const s of r.data) {
+    const box = document.createElement('div');
+    box.className = 'service';
+
+    const tipo = s.tipo_servizio || 'funerale';
+
+    const nomi = {
+      funerale: '⚰️ Funerale',
+      trasferimento: '🚐 Trasferimento',
+      vestizione: '👔 Vestizione'
+    };
+
+    const h = document.createElement('h3');
+    h.textContent = (nomi[tipo] || tipo) +
+      ' — ' + dateIt(s.data_servizio);
+    box.append(h);
+
+    if (tipo === 'funerale') {
+      line(box, 'Ora di ritrovo', s.ora_ritrovo);
+
+      line(box, 'Partenza',
+        (s.luogo_partenza || '—') +
+        ' — ore ' + (s.ora_partenza || '—'));
+
+      line(box, 'Funzione religiosa',
+        s.funzione_religiosa ? 'Presente' : 'Assente');
+
+      if (s.funzione_religiosa) {
+        line(box, 'Luogo della funzione', s.luogo_funzione);
+        line(box, 'Ora della funzione', s.ora_funzione);
+      }
+
+      line(box, 'Cimitero', s.cimitero);
+      line(box, 'Sepoltura', s.tipo_sepoltura);
+
+    } else {
+      line(box, 'Ora del servizio', s.ora_servizio);
+      line(box, 'Luogo del servizio', s.luogo_servizio);
+
+      if (s.link_maps) {
+        try {
+          const url = new URL(s.link_maps);
+
+          if (['https:', 'http:'].includes(url.protocol)) {
+            const p = document.createElement('p');
+            const a = document.createElement('a');
+
+            a.href = url.href;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = '📍 Apri posizione sulla mappa';
+
+            p.append(a);
+            box.append(p);
+          }
+        } catch (e) {
+          line(box, 'Posizione', 'Link non valido');
+        }
+      }
+    }
+
+    line(box, 'Note', s.note || '—');
+
+    if (profile.ruolo === 'amministratore') {
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+
+      actions.append(
+        button('✏️ Modifica', 'secondary',
+          () => editService(s)),
+        button('🗑️ Elimina', 'danger',
+          () => removeService(s.id))
+      );
+
+      box.append(actions);
+    }
+
+    target.append(box);
+  }
+}
+
 function editService(s) {
   $('serviceId').value = s.id;
   $('tipoServizio').value = s.tipo_servizio || 'funerale';
