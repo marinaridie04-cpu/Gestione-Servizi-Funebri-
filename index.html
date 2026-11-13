@@ -121,7 +121,13 @@ $('tipoServizio').addEventListener(
 );
 
 toggleTipoServizio();
-function clearForm(){$('serviceForm').reset();$('serviceId').value='';$('saveBtn').textContent='💾 Salva servizio';show('cancelEdit',false);toggleFunzione()}
+function clearForm() {
+  $('serviceForm').reset();
+  $('serviceId').value = '';
+  $('saveBtn').textContent = '💾 Salva servizio';
+  show('cancelEdit', false);
+  toggleTipoServizio();
+}
 $('cancelEdit').onclick=clearForm;
 function dateIt(s){return s?String(s).split('-').reverse().join('/'):'—'}
 function button(label,cls,fn){let b=document.createElement('button');b.type='button';b.className=cls;b.textContent=label;b.onclick=fn;return b}
