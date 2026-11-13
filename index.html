@@ -81,11 +81,17 @@ async function removeService(id){if(!confirm('Eliminare questo servizio?'))retur
 $('serviceForm').onsubmit=async(e)=>{e.preventDefault();if(!profile||profile.ruolo!=='amministratore')return;const present=$('funzione').value==='true';const data={data_servizio:$('data').value,ora_ritrovo:$('ritrovo').value,luogo_partenza:$('partenza').value.trim(),ora_partenza:$('oraPartenza').value,funzione_religiosa:present,luogo_funzione:present?$('luogoFunzione').value.trim():null,ora_funzione:present?$('oraFunzione').value:null,cimitero:$('cimitero').value.trim(),tipo_sepoltura:$('sepoltura').value,note:$('note').value.trim()};const id=$('serviceId').value;let r=id?await db.from('servizi').update(data).eq('id',id):await db.from('servizi').insert(data);if(r.error){alert('Errore: '+errorText(r.error));return}clearForm();await loadAll();alert('Servizio salvato')};
 async function loadRequests() {
   const target = $('requestsList');
-  target.replaceChildren();
+  target.replaceChildren(); 
+let query = db.from('richieste')
+  .select('id,servizio_id,dipendente_id,stato');
 
-  const r = await db.from('richieste')
-    .select('id,servizio_id,dipendente_id,stato')
-    .order('aggiornata_il', {ascending:false});
+if (profile.ruolo === 'dipendente') {
+  query = query.eq('dipendente_id', session.user.id);
+}
+
+const r = await query.order('aggiornata_il', {
+  ascending: false
+});
 
   if (r.error) {
     paragraph(target, 'Errore: ' + errorText(r.error));
