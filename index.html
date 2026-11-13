@@ -159,14 +159,13 @@ const r = await query.order('aggiornata_il', {
     if (profile.ruolo === 'amministratore') {
       line(box, 'Dipendente',
         mappaNomi.get(q.dipendente_id) || 'Non disponibile');
-    }
-
-    const stati = {
-      in_attesa: '⏳ In attesa',
-      accettata: '✅ Accettata',
-      rifiutata: '❌ Non disponibile'
-    };
-
+    }  
+const stati = {
+  in_attesa: '⏳ In attesa',
+  accettata: '✅ Accettata',
+  rifiutata: '❌ Non disponibile',
+  rimossa: '↩️ Rimosso dall’amministratore'
+};
     line(box, 'Stato', stati[q.stato] || q.stato);
 
     if (
