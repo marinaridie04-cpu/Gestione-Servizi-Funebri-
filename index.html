@@ -81,8 +81,111 @@ async function removeService(id){if(!confirm('Eliminare questo servizio?'))retur
 $('serviceForm').onsubmit=async(e)=>{e.preventDefault();if(!profile||profile.ruolo!=='amministratore')return;const present=$('funzione').value==='true';const data={data_servizio:$('data').value,ora_ritrovo:$('ritrovo').value,luogo_partenza:$('partenza').value.trim(),ora_partenza:$('oraPartenza').value,funzione_religiosa:present,luogo_funzione:present?$('luogoFunzione').value.trim():null,ora_funzione:present?$('oraFunzione').value:null,cimitero:$('cimitero').value.trim(),tipo_sepoltura:$('sepoltura').value,note:$('note').value.trim()};const id=$('serviceId').value;let r=id?await db.from('servizi').update(data).eq('id',id):await db.from('servizi').insert(data);if(r.error){alert('Errore: '+errorText(r.error));return}clearForm();await loadAll();alert('Servizio salvato')};
 async function loadRequests(){let target=$('requestsList');target.replaceChildren();const r=await db.from('richieste').select('id,servizio_id,dipendente_id,stato').order('aggiornata_il',{ascending:false});if(r.error){paragraph(target,'Errore: '+errorText(r.error));return}if(!r.data.length){paragraph(target,'Nessuna richiesta ricevuta.');return}for(const q of r.data){let box=document.createElement('div');box.className='service';line(box,'Servizio',q.servizio_id);line(box,'Stato',q.stato.replace('_',' '));if(profile.ruolo==='amministratore')line(box,'Dipendente',q.dipendente_id);if(profile.ruolo==='dipendente'&&q.stato==='in_attesa'){let actions=document.createElement('div');actions.className='actions';actions.append(button('✅ Disponibile','secondary',()=>respond(q,'accettata')),button('❌ Non disponibile','danger',()=>respond(q,'rifiutata')));box.append(actions)}target.append(box)}}
 async function respond(q,state){if(!confirm('Confermi la risposta?'))return;const r=await db.from('richieste').update({stato:state}).eq('id',q.id).eq('dipendente_id',session.user.id).eq('stato','in_attesa').select('id');if(r.error){alert('Errore: '+errorText(r.error));return}if(!r.data.length){alert('Risposta non aggiornata');return}await loadRequests()}
-async function loadTeams(){const target=$('teamsList');target.replaceChildren();const r=await db.from('squadre').select('servizio_id,dipendente_id');if(r.error){paragraph(target,'Errore: '+errorText(r.error));return}if(!r.data.length){paragraph(target,'Nessuna squadra assegnata.');return}const ids=[...new Set(r.data.map(x=>x.dipendente_id))];const names=await db.from('profili').select('id,nome,cognome').in('id',ids);const map=new Map((names.data||[]).map(p=>[p.id,p.nome+' '+p.cognome]));const grouped={};for(const a of r.data)(grouped[a.servizio_id]??=[]).push(map.get(a.dipendente_id)||'Dipendente');for(const [id,members] of Object.entries(grouped)){let box=document.createElement('div');box.className='service';line(box,'Servizio',id);line(box,'Squadra',members.join(', '));target.append(box)}}
+async function loadTeams() {
+  const target = $('teamsList');
+  target.replaceChildren();
 
+  const r = await db.from('squadre')
+    .select('servizio_id,dipendente_id');
+
+  if (r.error) {
+    paragraph(target, 'Errore: ' + errorText(r.error));
+    return;
+  }
+
+  // Solo le squadre di cui fa parte il dipendente.
+  // L'amministratore vede tutte le squadre.
+  const mie = profile.ruolo === 'amministratore'
+    ? r.data
+    : r.data.filter(x =>
+        r.data.some(y =>
+          y.servizio_id === x.servizio_id &&
+          y.dipendente_id === session.user.id
+        )
+      );
+
+  if (!mie.length) {
+    paragraph(target, 'Nessuna squadra assegnata.');
+    return;
+  }
+
+  const idsServizi = [...new Set(
+    mie.map(x => x.servizio_id)
+  )];
+
+  const idsDipendenti = [...new Set(
+    mie.map(x => x.dipendente_id)
+  )];
+
+  const [servizi, nomi] = await Promise.all([
+    db.from('servizi')
+      .select('id,data_servizio,ora_ritrovo,luogo_partenza,ora_partenza')
+      .in('id', idsServizi),
+
+    db.from('profili')
+      .select('id,nome,cognome')
+      .in('id', idsDipendenti)
+  ]);
+
+  if (servizi.error || nomi.error) {
+    paragraph(target, 'Errore: ' +
+      errorText(servizi.error || nomi.error));
+    return;
+  }
+
+  const mappaServizi = new Map(
+    servizi.data.map(s => [s.id, s])
+  );
+
+  const mappaNomi = new Map(
+    nomi.data.map(p => [
+      p.id, p.nome + ' ' + p.cognome
+    ])
+  );
+
+  for (const id of idsServizi) {
+    const servizio = mappaServizi.get(id);
+    if (!servizio) continue;
+
+    const componenti = mie.filter(x =>
+      x.servizio_id === id
+    );
+
+    const box = document.createElement('div');
+    box.className = 'service';
+
+    const titolo = document.createElement('h3');
+    titolo.textContent = '📅 ' +
+      dateIt(servizio.data_servizio);
+    box.append(titolo);
+
+    line(box, 'Ora di ritrovo',
+      servizio.ora_ritrovo);
+
+    line(box, 'Luogo di partenza',
+      servizio.luogo_partenza);
+
+    line(box, 'Ora di partenza',
+      servizio.ora_partenza);
+
+    const h = document.createElement('h3');
+    h.textContent = '👥 Componenti della squadra (' +
+      componenti.length + ')';
+    box.append(h);
+
+    for (const c of componenti) {
+      const nome = mappaNomi.get(c.dipendente_id);
+
+      if (nome) {
+        paragraph(box, '✅ ' + nome);
+      } else {
+        paragraph(box, '✅ Componente della squadra');
+      }
+    }
+
+    target.append(box);
+  }
+}
 async function caricaInviti(){
   if(profile?.ruolo!=='amministratore')return;
 
