@@ -589,17 +589,15 @@ async function loadTeams() {
   servizio.tipo_servizio || 'funerale');
 
 line(box, 'Nome del defunto',
-  servizio.nome_defunto || 'Non indicato');
-
-    line(box, 'Ora di ritrovo',
-      servizio.ora_ritrovo);
-
-    line(box, 'Luogo di partenza',
-      servizio.luogo_partenza);
-
-    line(box, 'Ora di partenza',
-      servizio.ora_partenza);
-
+  servizio.nome_defunto || 'Non indicato');  
+if ((servizio.tipo_servizio || 'funerale') === 'funerale') {
+  line(box, 'Ora di ritrovo', servizio.ora_ritrovo);
+  line(box, 'Luogo di partenza', servizio.luogo_partenza);
+  line(box, 'Ora di partenza', servizio.ora_partenza);
+} else {
+  line(box, 'Ora del servizio', servizio.ora_servizio);
+  line(box, 'Luogo del servizio', servizio.luogo_servizio);
+}
     const h = document.createElement('h3');
     h.textContent = '👥 Componenti della squadra (' +
       componenti.length + ')';
