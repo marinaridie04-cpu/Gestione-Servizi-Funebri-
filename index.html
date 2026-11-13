@@ -185,6 +185,35 @@ const stati = {
       box.append(actions);
     }
 
+if (profile.ruolo === 'amministratore') {
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+
+  if (q.stato === 'accettata') {
+    actions.append(
+      button('❌ Rimuovi dalla squadra', 'danger',
+        () => adminAggiornaRichiesta(q, 'rimossa'))
+    );
+  }
+
+  if (q.stato === 'rimossa' || q.stato === 'rifiutata') {
+    actions.append(
+      button('📨 Ricontatta', 'secondary',
+        () => adminAggiornaRichiesta(q, 'in_attesa'))
+    );
+  }
+
+  if (q.stato !== 'accettata') {
+    actions.append(
+      button('✅ Inserisci in squadra', 'secondary',
+        () => adminAggiornaRichiesta(q, 'accettata'))
+    );
+  }
+
+  if (actions.childElementCount) {
+    box.append(actions);
+  }
+}
     target.append(box);
   }
 }
