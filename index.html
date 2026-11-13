@@ -217,6 +217,41 @@ if (profile.ruolo === 'amministratore') {
     target.append(box);
   }
 }
+
+async function adminAggiornaRichiesta(q, nuovoStato) {
+  if (profile?.ruolo !== 'amministratore') return;
+
+  const messaggi = {
+    rimossa: 'Rimuovere questo dipendente dalla squadra?',
+    in_attesa: 'Inviare nuovamente la richiesta?',
+    accettata: 'Confermare manualmente la disponibilità?'
+  };
+
+  if (!confirm(messaggi[nuovoStato])) return;
+
+  const r = await db.from('richieste')
+    .update({ stato: nuovoStato })
+    .eq('id', q.id)
+    .select('id');
+
+  if (r.error) {
+    alert('Errore: ' + errorText(r.error));
+    return;
+  }
+
+  if (!r.data.length) {
+    alert('Operazione non eseguita.');
+    return;
+  }
+
+  await Promise.all([
+    loadRequests(),
+    loadTeams()
+  ]);
+
+  alert('✅ Operazione completata');
+}
+
 async function respond(q,state){if(!confirm('Confermi la risposta?'))return;const r=await db.from('richieste').update({stato:state}).eq('id',q.id).eq('dipendente_id',session.user.id).eq('stato','in_attesa').select('id');if(r.error){alert('Errore: '+errorText(r.error));return}if(!r.data.length){alert('Risposta non aggiornata');return}await loadRequests()}
 async function loadTeams() {
   const target = $('teamsList');
