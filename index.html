@@ -546,7 +546,7 @@ async function loadTeams() {
 
   const [servizi, nomi] = await Promise.all([
     db.from('servizi')
-      .select('id,data_servizio,ora_ritrovo,luogo_partenza,ora_partenza')
+      .select('id,data_servizio,tipo_servizio,nome_defunto,ora_ritrovo,luogo_partenza,ora_partenza,ora_servizio,luogo_servizio')
       .in('id', idsServizi),
 
     db.from('profili')
@@ -585,6 +585,11 @@ async function loadTeams() {
     titolo.textContent = '📅 ' +
       dateIt(servizio.data_servizio);
     box.append(titolo);
+    line(box, 'Tipo di servizio',
+  servizio.tipo_servizio || 'funerale');
+
+line(box, 'Nome del defunto',
+  servizio.nome_defunto || 'Non indicato');
 
     line(box, 'Ora di ritrovo',
       servizio.ora_ritrovo);
