@@ -1354,6 +1354,7 @@ $('meseSuccessivo').onclick = async () => {
   await caricaCalendario();
 };
   
+
 async function caricaAnagrafica() {
   if (profile?.ruolo !== 'amministratore') return;
 
@@ -1396,7 +1397,10 @@ async function caricaAnagrafica() {
 
     line(box, 'Telefono', dip.telefono || 'Da inserire');
     line(box, 'Data di nascita',
-      dip.data_nascita ? dateIt(dip.data_nascita) : 'Da inserire');
+      dip.data_nascita
+        ? dateIt(dip.data_nascita)
+        : 'Da inserire');
+
     line(box, 'Stato',
       dip.attivo === false ? 'Non attivo' : 'Attivo');
 
@@ -1405,18 +1409,225 @@ async function caricaAnagrafica() {
       const internazionale = numero.startsWith('39')
         ? numero : '39' + numero;
 
-      const link = document.createElement('a');
-      link.href = 'https://wa.me/' + internazionale;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = '💬 Contatta su WhatsApp';
-      box.append(link);
+      const a = document.createElement('a');
+      a.href = 'https://wa.me/' + internazionale;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = '💬 Contatta su WhatsApp';
+
+      box.append(a);
     }
 
+    const modifica = button(
+      '✏️ Modifica dipendente',
+      'secondary',
+      () => modificaAnagrafica(dip, box)
+    );
+
+    modifica.style.width = '100%';
+    modifica.style.marginTop = '15px';
+
+    box.append(modifica);
     target.append(box);
   }
 }
 
+async function modificaAnagrafica(dip, box) {
+  if (profile?.ruolo !== 'amministratore') return;
+
+  const precedente = box.querySelector('.formAnagrafica');
+
+  if (precedente) {
+    precedente.remove();
+    return;
+  }
+
+  const r = await db.from('anagrafica_riservata')
+    .select('*')
+    .eq('dipendente_id', dip.id)
+    .maybeSingle();
+
+  if (r.error) {
+    alert('Impossibile leggere i dati riservati: ' +
+      errorText(r.error));
+    return;
+  }
+
+  const riservati = r.data || {};
+
+  const form = document.createElement('form');
+  form.className = 'formAnagrafica';
+  form.style.marginTop = '20px';
+
+  function campo(etichetta, valore, tipo = 'text') {
+    const label = document.createElement('label');
+    label.textContent = etichetta;
+
+    const input = document.createElement('input');
+    input.type = tipo;
+    input.value = valore ?? '';
+
+    form.append(label, input);
+    return input;
+  }
+
+  const nome = campo('Nome', dip.nome);
+  const cognome = campo('Cognome', dip.cognome);
+  const telefono = campo('Telefono', dip.telefono, 'tel');
+  const nascita = campo(
+    'Data di nascita',
+    dip.data_nascita,
+    'date'
+  );
+
+  const foto = campo(
+    'Link della foto profilo',
+    dip.foto_url,
+    'url'
+  );
+
+  const cf = campo(
+    'Codice fiscale',
+    riservati.codice_fiscale
+  );
+  cf.maxLength = 16;
+
+  const camicia = campo(
+    'Taglia camicia',
+    riservati.taglia_camicia
+  );
+
+  const pantaloni = campo(
+    'Taglia pantaloni',
+    riservati.taglia_pantaloni
+  );
+
+  const scarpe = campo(
+    'Numero scarpe',
+    riservati.numero_scarpe
+  );
+
+  const giacca = campo(
+    'Taglia giacca',
+    riservati.taglia_giacca
+  );
+
+  const piumone = campo(
+    'Taglia piumone',
+    riservati.taglia_piumone
+  );
+
+  const felpa = campo(
+    'Taglia felpa P.A.',
+    riservati.taglia_felpa_pa
+  );
+
+  const labelStato = document.createElement('label');
+  labelStato.textContent = 'Stato del dipendente';
+
+  const stato = document.createElement('select');
+  stato.add(new Option('✅ Attivo', 'true'));
+  stato.add(new Option('❌ Non attivo', 'false'));
+  stato.value = String(dip.attivo !== false);
+
+  form.append(labelStato, stato);
+
+  const salva = document.createElement('button');
+  salva.type = 'submit';
+  salva.className = 'primary';
+  salva.textContent = '💾 Salva anagrafica';
+
+  const annulla = button(
+    'Annulla modifica',
+    'secondary',
+    () => form.remove()
+  );
+  annulla.style.width = '100%';
+  annulla.style.marginTop = '10px';
+
+  form.append(salva, annulla);
+
+  box.append(form);
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+
+    if (!nome.value.trim() || !cognome.value.trim()) {
+      alert('Nome e cognome sono obbligatori.');
+      return;
+    }
+
+    const codice = cf.value.trim().toUpperCase();
+
+    if (codice && !/^[A-Z0-9]{16}$/.test(codice)) {
+      alert('Il codice fiscale deve contenere 16 caratteri.');
+      return;
+    }
+
+    salva.disabled = true;
+
+    try {
+      const datiPubblici = {
+        nome: nome.value.trim(),
+        cognome: cognome.value.trim(),
+        telefono: telefono.value.trim() || null,
+        data_nascita: nascita.value || null,
+        foto_url: foto.value.trim() || null,
+        attivo: stato.value === 'true'
+      };
+
+      const datiRiservati = {
+        dipendente_id: dip.id,
+        codice_fiscale: codice || null,
+        taglia_camicia: camicia.value.trim() || null,
+        taglia_pantaloni: pantaloni.value.trim() || null,
+        numero_scarpe: scarpe.value.trim() || null,
+        taglia_giacca: giacca.value.trim() || null,
+        taglia_piumone: piumone.value.trim() || null,
+        taglia_felpa_pa: felpa.value.trim() || null
+      };
+
+      const aggiornamento = await db.from('profili')
+        .update(datiPubblici)
+        .eq('id', dip.id)
+        .select('id');
+
+      if (aggiornamento.error) throw aggiornamento.error;
+
+      if (!aggiornamento.data?.length) {
+        throw new Error(
+          'Modifica profilo non autorizzata.'
+        );
+      }
+
+      const riservato = await db
+        .from('anagrafica_riservata')
+        .upsert(datiRiservati, {
+          onConflict: 'dipendente_id'
+        })
+        .select('dipendente_id');
+
+      if (riservato.error) throw riservato.error;
+
+      if (!riservato.data?.length) {
+        throw new Error(
+          'Salvataggio dei dati riservati non autorizzato.'
+        );
+      }
+
+      alert('✅ Anagrafica salvata correttamente');
+      await caricaAnagrafica();
+
+    } catch (errore) {
+      alert(
+        'Salvataggio non completato. Alcuni dati potrebbero essere stati aggiornati. Dettagli: ' +
+        errorText(errore)
+      );
+    } finally {
+      salva.disabled = false;
+    }
+  };
+}
 function mostraPagina(pagina) {
   const admin = profile?.ruolo === 'amministratore';
 
