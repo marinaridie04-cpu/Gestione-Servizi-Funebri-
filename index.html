@@ -618,7 +618,23 @@ if ((servizio.tipo_servizio || 'funerale') === 'funerale') {
       servizio.squadra_completa
         ? '✅ Completa'
         : '⏳ In preparazione');
+if (servizio.squadra_completa) {
+  line(box, '🚘 Carro funebre',
+    servizio.carro_funebre || 'Non assegnato');
 
+  if (servizio.carro_funebre) {
+    line(box, 'Autista carro funebre',
+      mappaNomi.get(servizio.autista_carro) || 'Non assegnato');
+  }
+
+  line(box, '🚐 Furgone',
+    servizio.furgone || 'Non assegnato');
+
+  if (servizio.furgone) {
+    line(box, 'Autista furgone',
+      mappaNomi.get(servizio.autista_furgone) || 'Non assegnato');
+  }
+}
     if (profile.ruolo === 'amministratore') {
       const azioniSquadra = document.createElement('div');
       azioniSquadra.className = 'actions';
