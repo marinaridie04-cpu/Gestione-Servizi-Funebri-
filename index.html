@@ -51,6 +51,70 @@ header {
   color: #203b66;
   margin: 10px 0;
 }
+  
+/* CALENDARIO */
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.cal-header h3 {
+  margin: 0;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.cal-day {
+  min-height: 49px;
+  padding: 7px 2px;
+  border-radius: 9px;
+  background: #f2f5fa;
+  color: #17243a;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.cal-day.selected {
+  outline: 2px solid #203b66;
+  background: #e7edf6;
+}
+
+.cal-weekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 8px 0;
+}
+
+.cal-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.cal-dot.svolto { background: #16a34a; }
+.cal-dot.annullato { background: #dc2626; }
+
+.cal-dots {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
 </style>
 </head>
 <body>
@@ -164,9 +228,24 @@ header {
   <h2>👥 Le mie squadre</h2>
   <div id="teamsList"></div>
 </section>
+
 <section id="paginaCalendario" class="card hidden">
   <h2>📅 Calendario dei servizi</h2>
-  <p>Qui inseriremo il calendario mensile.</p>
+
+  <div class="cal-header">
+    <button id="mesePrecedente" class="secondary" type="button">❮</button>
+    <h3 id="titoloMese"></h3>
+    <button id="meseSuccessivo" class="secondary" type="button">❯</button>
+  </div>
+
+  <div class="cal-grid" id="grigliaCalendario"></div>
+
+  <p class="muted">
+    ⚪ Programmato · 🟢 Svolto · 🔴 Annullato
+  </p>
+
+  <h3 id="giornoSelezionato">Seleziona un giorno</h3>
+  <div id="serviziGiorno"></div>
 </section>
 
 <section id="paginaAnagrafica" class="card hidden">
@@ -1028,6 +1107,167 @@ $('chiudiMenu').onclick = chiudiMenu;
 $('menuOverlay').onclick = chiudiMenu;
 
 
+// CALENDARIO DEI SERVIZI
+let meseCalendario = new Date();
+meseCalendario.setDate(1);
+
+let serviziCalendario = [];
+
+async function caricaCalendario() {
+  const anno = meseCalendario.getFullYear();
+  const mese = meseCalendario.getMonth();
+
+  const inizio = new Date(anno, mese, 1);
+  const fine = new Date(anno, mese + 1, 1);
+
+  function dataISO(d) {
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
+  const r = await db.from('servizi')
+    .select('*')
+    .gte('data_servizio', dataISO(inizio))
+    .lt('data_servizio', dataISO(fine))
+    .order('data_servizio');
+
+  if (r.error) {
+    $('grigliaCalendario').textContent =
+      'Errore: ' + errorText(r.error);
+    return;
+  }
+
+  serviziCalendario = r.data;
+  disegnaCalendario();
+}
+
+function disegnaCalendario() {
+  const anno = meseCalendario.getFullYear();
+  const mese = meseCalendario.getMonth();
+
+  $('titoloMese').textContent =
+    meseCalendario.toLocaleDateString('it-IT', {
+      month: 'long',
+      year: 'numeric'
+    });
+
+  const griglia = $('grigliaCalendario');
+  griglia.replaceChildren();
+
+  for (const nome of ['L', 'M', 'M', 'G', 'V', 'S', 'D']) {
+    const el = document.createElement('div');
+    el.className = 'cal-weekday';
+    el.textContent = nome;
+    griglia.append(el);
+  }
+
+  const primoGiorno = new Date(anno, mese, 1);
+  const spazi = (primoGiorno.getDay() + 6) % 7;
+  const giorni = new Date(anno, mese + 1, 0).getDate();
+
+  for (let i = 0; i < spazi; i++) {
+    griglia.append(document.createElement('div'));
+  }
+
+  for (let giorno = 1; giorno <= giorni; giorno++) {
+    const data = anno + '-' +
+      String(mese + 1).padStart(2, '0') + '-' +
+      String(giorno).padStart(2, '0');
+
+    const servizi = serviziCalendario.filter(
+      s => s.data_servizio === data
+    );
+
+    const cella = document.createElement('button');
+    cella.type = 'button';
+    cella.className = 'cal-day';
+    cella.textContent = giorno;
+
+    if (servizi.length) {
+      const punti = document.createElement('div');
+      punti.className = 'cal-dots';
+
+      for (const s of servizi.slice(0, 4)) {
+        const punto = document.createElement('span');
+        punto.className = 'cal-dot';
+
+        const stato = s.stato_servizio || 'programmato';
+
+        if (stato === 'svolto') {
+          punto.classList.add('svolto');
+        } else if (stato === 'annullato') {
+          punto.classList.add('annullato');
+        }
+
+        punti.append(punto);
+      }
+
+      cella.append(punti);
+    }
+
+    cella.onclick = () => {
+      griglia.querySelectorAll('.cal-day')
+        .forEach(x => x.classList.remove('selected'));
+
+      cella.classList.add('selected');
+      mostraServiziGiorno(data);
+    };
+
+    griglia.append(cella);
+  }
+
+  $('giornoSelezionato').textContent = 'Seleziona un giorno';
+  $('serviziGiorno').replaceChildren();
+}
+
+function mostraServiziGiorno(data) {
+  $('giornoSelezionato').textContent =
+    'Servizi del ' + dateIt(data);
+
+  const contenitore = $('serviziGiorno');
+  contenitore.replaceChildren();
+
+  const elenco = serviziCalendario.filter(
+    s => s.data_servizio === data
+  );
+
+  if (!elenco.length) {
+    paragraph(contenitore, 'Nessun servizio previsto.');
+    return;
+  }
+
+  for (const s of elenco) {
+    const box = document.createElement('div');
+    box.className = 'service';
+
+    line(box, 'Tipo', s.tipo_servizio || 'funerale');
+    line(box, 'Defunto', s.nome_defunto || 'Non indicato');
+
+    const funerale = (s.tipo_servizio || 'funerale') === 'funerale';
+
+    line(box, 'Ora',
+      funerale ? s.ora_ritrovo : s.ora_servizio);
+
+    line(box, 'Luogo',
+      funerale ? s.luogo_partenza : s.luogo_servizio);
+
+    line(box, 'Stato',
+      s.stato_servizio || 'programmato');
+
+    contenitore.append(box);
+  }
+}
+
+$('mesePrecedente').onclick = async () => {
+  meseCalendario.setMonth(meseCalendario.getMonth() - 1);
+  await caricaCalendario();
+};
+
+$('meseSuccessivo').onclick = async () => {
+  meseCalendario.setMonth(meseCalendario.getMonth() + 1);
+  await caricaCalendario();
+};
 function mostraPagina(pagina) {
   const admin = profile?.ruolo === 'amministratore';
 
@@ -1039,7 +1279,9 @@ function mostraPagina(pagina) {
 
   show('paginaSquadre', pagina === 'squadre');
   show('paginaCalendario', pagina === 'calendario');
-
+if (pagina === 'calendario') {
+  caricaCalendario();
+}
   show('paginaAnagrafica',
     pagina === 'anagrafica' && admin);
 
