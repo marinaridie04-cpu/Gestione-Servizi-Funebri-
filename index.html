@@ -168,6 +168,13 @@ header {
   <option value="trasferimento">🚐 Trasferimento</option>
   <option value="vestizione">👔 Vestizione</option>
 </select>
+<label>Agenzia del servizio *</label>
+<select id="agenziaServizio" required>
+  <option value="">Seleziona l'agenzia</option>
+  <option value="P.A. Carrara">P.A. Carrara</option>
+  <option value="O.F. La Ginestra">O.F. La Ginestra</option>
+  <option value="O.F. Bedonia">O.F. Bedonia</option>
+</select>
 <label>Data del servizio *</label><input id="data" type="date" required>
 <label>Nome e cognome del defunto *</label>
 <input
@@ -354,6 +361,8 @@ if (!serviziVisibili.length) {
     box.append(h);
     line(box, 'Nome del defunto',
   s.nome_defunto || 'Non indicato');
+    line(box, 'Agenzia',
+  s.agenzia || 'Da assegnare');
     if (tipo === 'funerale') {
       line(box, 'Ora di ritrovo', s.ora_ritrovo);
 
@@ -485,6 +494,7 @@ async function aggiornaStatoServizio(id, nuovoStato) {
 function editService(s) {
   $('serviceId').value = s.id;
   $('tipoServizio').value = s.tipo_servizio || 'funerale';
+  $('agenziaServizio').value = s.agenzia || '';
   $('data').value = s.data_servizio || '';
   $('nomeDefunto').value = s.nome_defunto || '';
   $('ritrovo').value = s.ora_ritrovo || '';
@@ -527,6 +537,7 @@ $('serviceForm').onsubmit = async (e) => {
 
   const data = {
     tipo_servizio: tipo,
+    agenzia: $('agenziaServizio').value,
     data_servizio: $('data').value,
     nome_defunto: $('nomeDefunto').value.trim(),
     note: $('note').value.trim(),
