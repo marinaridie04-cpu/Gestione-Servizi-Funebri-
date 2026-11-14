@@ -1416,6 +1416,7 @@ async function caricaAnagrafica() {
     target.append(box);
   }
 }
+
 function mostraPagina(pagina) {
   const admin = profile?.ruolo === 'amministratore';
 
@@ -1427,11 +1428,17 @@ function mostraPagina(pagina) {
 
   show('paginaSquadre', pagina === 'squadre');
   show('paginaCalendario', pagina === 'calendario');
-if (pagina === 'calendario') {
-  caricaCalendario();
-}
+
+  if (pagina === 'calendario') {
+    caricaCalendario();
+  }
+
   show('paginaAnagrafica',
     pagina === 'anagrafica' && admin);
+
+  if (pagina === 'anagrafica' && admin) {
+    caricaAnagrafica();
+  }
 
   chiudiMenu();
   window.scrollTo({top: 0, behavior: 'smooth'});
@@ -1447,10 +1454,6 @@ document.querySelectorAll('#menuPanel [data-page]')
         profile?.ruolo !== 'amministratore'
       ) {
         chiudiMenu();
-      
-if (pagina === 'anagrafica' && admin) {
-  caricaAnagrafica();
-}
         alert('Sezione riservata all’amministratore.');
         return;
       }
