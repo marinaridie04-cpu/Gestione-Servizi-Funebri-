@@ -62,15 +62,29 @@ header {
 </header>
 
 <div id="menuOverlay" class="menu-overlay hidden"></div>
-
 <nav id="menuPanel" class="menu-panel hidden">
   <h2>☰ Menu</h2>
   <button id="chiudiMenu" type="button">✕ Chiudi menu</button>
-  <button type="button" data-dest="servicesList">🏠 Home e servizi</button>
-  <button type="button" data-dest="servicesList">📅 Calendario (prossimamente)</button>
-  <button type="button" data-dest="servicesList">👥 Anagrafica (prossimamente)</button>
-  <button type="button" data-dest="requestsList">📨 Richieste disponibilità</button>
-  <button type="button" data-dest="teamsList">✅ Le mie squadre</button>
+
+  <button type="button" data-page="home">
+    🏠 Home e servizi
+  </button>
+
+  <button type="button" data-page="calendario">
+    📅 Calendario
+  </button>
+
+  <button type="button" data-page="anagrafica">
+    👥 Anagrafica dipendenti
+  </button>
+
+  <button type="button" data-page="richieste">
+    📨 Richieste disponibilità
+  </button>
+
+  <button type="button" data-page="squadre">
+    ✅ Le mie squadre
+  </button>
 </nav>
 <main>
 <section id="setup" class="card hidden"><h2>Configurazione necessaria</h2><p>Inserisci nel codice l'URL del progetto Supabase e la sua Publishable key. Non inserire mai la Secret key.</p></section>
@@ -1013,14 +1027,41 @@ $('menuButton').onclick = apriMenu;
 $('chiudiMenu').onclick = chiudiMenu;
 $('menuOverlay').onclick = chiudiMenu;
 
-document.querySelectorAll('#menuPanel [data-dest]')
+
+function mostraPagina(pagina) {
+  const admin = profile?.ruolo === 'amministratore';
+
+  show('adminSection', pagina === 'home' && admin);
+  show('paginaServizi', pagina === 'home');
+
+  show('invitiSection', pagina === 'richieste' && admin);
+  show('paginaRichieste', pagina === 'richieste');
+
+  show('paginaSquadre', pagina === 'squadre');
+  show('paginaCalendario', pagina === 'calendario');
+
+  show('paginaAnagrafica',
+    pagina === 'anagrafica' && admin);
+
+  chiudiMenu();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+document.querySelectorAll('#menuPanel [data-page]')
   .forEach(btn => {
     btn.onclick = () => {
-      chiudiMenu();
-      const destinazione = $(btn.dataset.dest);
-      if (destinazione) {
-        destinazione.scrollIntoView({behavior:'smooth'});
+      const pagina = btn.dataset.page;
+
+      if (
+        pagina === 'anagrafica' &&
+        profile?.ruolo !== 'amministratore'
+      ) {
+        chiudiMenu();
+        alert('Sezione riservata all’amministratore.');
+        return;
       }
+
+      mostraPagina(pagina);
     };
   });
 start();
