@@ -398,22 +398,86 @@ async function loadServices() {
 
     line(box, 'Note', s.note || '—');
 
-    if (profile.ruolo === 'amministratore') {
-      const actions = document.createElement('div');
-      actions.className = 'actions';
 
-      actions.append(
-        button('✏️ Modifica', 'secondary',
-          () => editService(s)),
-        button('🗑️ Elimina', 'danger',
-          () => removeService(s.id))
-      );
+if (profile.ruolo === 'amministratore') {
+  const stato = s.stato_servizio || 'programmato';
 
-      box.append(actions);
-    }
+  const nomiStato = {
+    programmato: '⚪ Programmato',
+    svolto: '🟢 Svolto',
+    annullato: '🔴 Annullato'
+  };
+
+  line(box, 'Stato del servizio', nomiStato[stato] || stato);
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+
+  if (stato !== 'svolto') {
+    actions.append(
+      button('✅ Segna come svolto', 'secondary',
+        () => aggiornaStatoServizio(s.id, 'svolto'))
+    );
+  }
+
+  if (stato !== 'annullato') {
+    actions.append(
+      button('❌ Annulla servizio', 'danger',
+        () => aggiornaStatoServizio(s.id, 'annullato'))
+    );
+  }
+
+  if (stato !== 'programmato') {
+    actions.append(
+      button('↩️ Ripristina programmato', 'secondary',
+        () => aggiornaStatoServizio(s.id, 'programmato'))
+    );
+  }
+
+  actions.append(
+    button('✏️ Modifica', 'secondary',
+      () => editService(s)),
+    button('🗑️ Elimina', 'danger',
+      () => removeService(s.id))
+  );
+
+  box.append(actions);
+}
+
 
     target.append(box);
   }
+}
+
+async function aggiornaStatoServizio(id, nuovoStato) {
+  if (profile?.ruolo !== 'amministratore') return;
+
+  const messaggi = {
+    svolto: 'Confermi che il servizio è stato svolto?',
+    annullato: 'Vuoi annullare questo servizio? Rimarrà nello storico.',
+    programmato: 'Vuoi riportare il servizio allo stato programmato?'
+  };
+
+  if (!confirm(messaggi[nuovoStato])) return;
+
+  const r = await db.from('servizi')
+    .update({ stato_servizio: nuovoStato })
+    .eq('id', id)
+    .select('id');
+
+  if (r.error || !r.data?.length) {
+    alert('Errore: ' +
+      (r.error ? errorText(r.error) : 'Operazione non autorizzata'));
+    return;
+  }
+
+  await loadServices();
+
+  if (!$('paginaCalendario').classList.contains('hidden')) {
+    await caricaCalendario();
+  }
+
+  alert('✅ Stato del servizio aggiornato');
 }
 
 function editService(s) {
