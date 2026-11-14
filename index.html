@@ -672,6 +672,135 @@ if ((servizio.tipo_servizio || 'funerale') === 'funerale') {
       box.append(azioniSquadra);
     }
 
+    // ASSEGNAZIONE MEZZI E AUTISTI
+    if (servizio.squadra_completa) {
+      const sezioneMezzi = document.createElement('div');
+
+      const titoloMezzi = document.createElement('h3');
+      titoloMezzi.textContent = '🚐 Mezzi e autisti';
+      sezioneMezzi.append(titoloMezzi);
+
+      const carri = [
+        'Mercedes-Benz blu',
+        'Mercedes-Benz grigio',
+        'Maserati'
+      ];
+
+      const furgoni = [
+        'Ford Transit',
+        'Mercedes-Benz Vito',
+        'Fiat Doblò'
+      ];
+
+      if (profile.ruolo === 'amministratore') {
+        function creaMenu(etichetta, opzioni, valore) {
+          const label = document.createElement('label');
+          label.textContent = etichetta;
+
+          const select = document.createElement('select');
+          select.add(new Option('Nessuno', ''));
+
+          for (const opzione of opzioni) {
+            select.add(new Option(opzione.testo, opzione.valore));
+          }
+
+          select.value = valore || '';
+          sezioneMezzi.append(label, select);
+
+          return select;
+        }
+
+        const opzioniAutisti = componenti.map(c => ({
+          testo: mappaNomi.get(c.dipendente_id) ||
+            'Dipendente',
+          valore: c.dipendente_id
+        }));
+
+        const carro = creaMenu(
+          'Carro funebre',
+          carri.map(x => ({ testo: x, valore: x })),
+          servizio.carro_funebre
+        );
+
+        const autistaCarro = creaMenu(
+          'Autista carro funebre',
+          opzioniAutisti,
+          servizio.autista_carro
+        );
+
+        const furgone = creaMenu(
+          'Furgone',
+          furgoni.map(x => ({ testo: x, valore: x })),
+          servizio.furgone
+        );
+
+        const autistaFurgone = creaMenu(
+          'Autista furgone',
+          opzioniAutisti,
+          servizio.autista_furgone
+        );
+
+        const salva = button(
+          '💾 Salva mezzi e autisti',
+          'primary',
+          async () => {
+            if (
+              (!!carro.value !== !!autistaCarro.value) ||
+              (!!furgone.value !== !!autistaFurgone.value)
+            ) {
+              alert('Per ogni mezzo selezionato devi indicare un autista.');
+              return;
+            }
+
+            if (!confirm('Salvare le assegnazioni?')) return;
+
+            salva.disabled = true;
+
+            const r = await db.from('servizi')
+              .update({
+                carro_funebre: carro.value || null,
+                autista_carro: autistaCarro.value || null,
+                furgone: furgone.value || null,
+                autista_furgone: autistaFurgone.value || null
+              })
+              .eq('id', servizio.id)
+              .eq('squadra_completa', true)
+              .select('id');
+
+            salva.disabled = false;
+
+            if (r.error || !r.data?.length) {
+              alert('Errore: ' +
+                (r.error
+                  ? errorText(r.error)
+                  : 'Assegnazione non eseguita'));
+              return;
+            }
+
+            alert('✅ Mezzi e autisti salvati');
+            await loadTeams();
+          }
+        );
+
+        sezioneMezzi.append(salva);
+
+      } else {
+        line(sezioneMezzi, 'Carro funebre',
+          servizio.carro_funebre || 'Non assegnato');
+
+        line(sezioneMezzi, 'Autista carro',
+          mappaNomi.get(servizio.autista_carro) || '—');
+
+        line(sezioneMezzi, 'Furgone',
+          servizio.furgone || 'Non assegnato');
+
+        line(sezioneMezzi, 'Autista furgone',
+          mappaNomi.get(servizio.autista_furgone) || '—');
+      }
+
+      box.append(sezioneMezzi);
+    }
+
     target.append(box);
   }
 }
