@@ -123,8 +123,10 @@ header {
 <label>Note e comunicazioni aggiuntive</label><textarea id="note" placeholder="Comunicazioni per i dipendenti..."></textarea>
 <button class="primary" type="submit" id="saveBtn">💾 Salva servizio</button><button type="button" id="cancelEdit" class="secondary hidden" style="width:100%;margin-top:9px">Annulla modifica</button>
 </form></section>
-<section class="card"><h2>📅 Servizi</h2><div id="servicesList"></div></section>
-  
+<section id="paginaServizi" class="card">
+  <h2>📅 Servizi</h2>
+  <div id="servicesList"></div>
+</section>
 <section id="invitiSection" class="card hidden">
   <h2>📨 Invia richieste di disponibilità</h2>
 
@@ -140,8 +142,24 @@ header {
     📨 Invia richieste
   </button>
 </section>
-<section class="card"><h2>✅ Richieste di disponibilità</h2><div id="requestsList"></div></section>
-<section class="card"><h2>👥 Le mie squadre</h2><div id="teamsList"></div></section>
+<section id="paginaRichieste" class="card">
+  <h2>✅ Richieste di disponibilità</h2>
+  <div id="requestsList"></div>
+</section>
+  <section id="paginaSquadre" class="card">
+  <h2>👥 Le mie squadre</h2>
+  <div id="teamsList"></div>
+</section>
+<section id="paginaCalendario" class="card hidden">
+  <h2>📅 Calendario dei servizi</h2>
+  <p>Qui inseriremo il calendario mensile.</p>
+</section>
+
+<section id="paginaAnagrafica" class="card hidden">
+  <h2>👥 Anagrafica dipendenti</h2>
+  <p>Qui inseriremo la gestione del personale.</p>
+</section>
+
 <p class="muted">Versione di prova. Non utilizzare dati reali finché accessi e permessi non sono stati verificati con più account.</p>
 </section>
 </main>
