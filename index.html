@@ -142,6 +142,13 @@ header {
     👥 Anagrafica dipendenti
   </button>
 
+<button type="button" data-page="rubrica">
+  👥 Rubrica colleghi
+</button>
+
+<button type="button" data-page="profilo">
+  👤 Il mio profilo
+</button>
   <button type="button" data-page="richieste">
     📨 Richieste disponibilità
   </button>
@@ -258,6 +265,29 @@ header {
   <h2>👥 Anagrafica dipendenti</h2>
   <p class="muted">Gestione del personale — solo amministratore</p>
   <div id="elencoAnagrafica"></div>
+</section>
+  
+<section id="paginaRubrica" class="card hidden">
+  <h2>👥 Rubrica colleghi</h2>
+  <p class="muted">Contatti del personale attivo</p>
+  <div id="elencoRubrica"></div>
+</section>
+
+<section id="paginaProfilo" class="card hidden">
+  <h2>👤 Il mio profilo</h2>
+  <div id="datiMioProfilo"></div>
+
+  <h3>📁 I miei servizi svolti</h3>
+
+  <label for="filtroAgenziaProfilo">Filtra per agenzia</label>
+  <select id="filtroAgenziaProfilo">
+    <option value="">Tutte le agenzie</option>
+    <option value="P.A. Carrara">P.A. Carrara</option>
+    <option value="O.F. La Ginestra">O.F. La Ginestra</option>
+    <option value="O.F. Bedonia">O.F. Bedonia</option>
+  </select>
+
+  <div id="storicoMioProfilo"></div>
 </section>
 <p class="muted">Versione di prova. Non utilizzare dati reali finché accessi e permessi non sono stati verificati con più account.</p>
 </section>
@@ -1706,6 +1736,208 @@ if (file) {
     }
   };
 }
+  
+async function fotoDipendente(elemento, percorso) {
+  if (!percorso) return;
+
+  if (percorso.startsWith('https://')) {
+    elemento.src = percorso;
+    return;
+  }
+
+  const r = await db.storage
+    .from('foto-dipendenti')
+    .createSignedUrl(percorso, 3600);
+
+  if (!r.error && r.data?.signedUrl) {
+    elemento.src = r.data.signedUrl;
+  }
+}
+
+function aggiungiContatto(box, dip) {
+  if (!dip.telefono) return;
+
+  const numero = String(dip.telefono).replace(/\D/g, '');
+  const internazionale = numero.startsWith('39')
+    ? numero : '39' + numero;
+
+  const link = document.createElement('a');
+  link.href = 'https://wa.me/' + internazionale;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = '💬 Contatta su WhatsApp';
+
+  box.append(link);
+}
+
+async function caricaRubrica() {
+  const target = $('elencoRubrica');
+  target.replaceChildren();
+
+  const r = await db.rpc('rubrica_colleghi');
+
+  if (r.error) {
+    paragraph(target, 'Errore: ' + errorText(r.error));
+    return;
+  }
+
+  if (!r.data?.length) {
+    paragraph(target, 'Nessun collega disponibile.');
+    return;
+  }
+
+  for (const dip of r.data) {
+    const box = document.createElement('div');
+    box.className = 'service';
+
+    const titolo = document.createElement('h3');
+    titolo.textContent =
+      (dip.nome || '') + ' ' + (dip.cognome || '');
+    box.append(titolo);
+
+    if (dip.foto_url) {
+      const foto = document.createElement('img');
+      foto.alt = 'Foto di ' + titolo.textContent;
+      foto.style.width = '90px';
+      foto.style.height = '90px';
+      foto.style.borderRadius = '50%';
+      foto.style.objectFit = 'cover';
+      box.append(foto);
+      await fotoDipendente(foto, dip.foto_url);
+    }
+
+    line(box, 'Email', dip.email_contatto || 'Non inserita');
+    line(box, 'Telefono', dip.telefono || 'Non inserito');
+    line(box, 'Data di nascita',
+      dip.data_nascita
+        ? dateIt(dip.data_nascita)
+        : 'Non inserita');
+
+    aggiungiContatto(box, dip);
+    target.append(box);
+  }
+}
+
+let storicoProfilo = [];
+
+function disegnaStoricoProfilo() {
+  const target = $('storicoMioProfilo');
+  target.replaceChildren();
+
+  const filtro = $('filtroAgenziaProfilo').value;
+
+  const elenco = storicoProfilo.filter(s =>
+    !filtro || s.agenzia === filtro
+  );
+
+  if (!elenco.length) {
+    paragraph(target, 'Nessun servizio svolto per questa agenzia.');
+    return;
+  }
+
+  for (const s of elenco) {
+    const box = document.createElement('div');
+    box.className = 'service';
+
+    const tipi = {
+      funerale: '⚰️ Funerale',
+      trasferimento: '🚐 Trasferimento',
+      vestizione: '👔 Vestizione'
+    };
+
+    const titolo = document.createElement('h3');
+    titolo.textContent =
+      (tipi[s.tipo_servizio] || s.tipo_servizio) +
+      ' — ' + dateIt(s.data_servizio);
+    box.append(titolo);
+
+    line(box, 'Agenzia', s.agenzia || 'Da assegnare');
+    line(box, 'Stato', '✅ Svolto');
+
+    target.append(box);
+  }
+}
+
+$('filtroAgenziaProfilo').onchange = disegnaStoricoProfilo;
+
+async function caricaMioProfilo() {
+  const target = $('datiMioProfilo');
+  target.replaceChildren();
+  storicoProfilo = [];
+
+  const utenteId = session?.user?.id;
+  if (!utenteId) return;
+
+  const r = await db.from('profili')
+    .select('id,nome,cognome,email_contatto,telefono,data_nascita,foto_url')
+    .eq('id', utenteId)
+    .maybeSingle();
+
+  if (r.error || !r.data) {
+    paragraph(target, 'Impossibile caricare il profilo: ' +
+      errorText(r.error));
+    return;
+  }
+
+  const dip = r.data;
+
+  const titolo = document.createElement('h3');
+  titolo.textContent = dip.nome + ' ' + dip.cognome;
+  target.append(titolo);
+
+  if (dip.foto_url) {
+    const foto = document.createElement('img');
+    foto.alt = 'La mia foto';
+    foto.style.width = '100px';
+    foto.style.height = '100px';
+    foto.style.objectFit = 'cover';
+    foto.style.borderRadius = '50%';
+    target.append(foto);
+    await fotoDipendente(foto, dip.foto_url);
+  }
+
+  line(target, 'Email',
+    dip.email_contatto || session.user.email || 'Non inserita');
+  line(target, 'Telefono', dip.telefono || 'Non inserito');
+  line(target, 'Data di nascita',
+    dip.data_nascita ? dateIt(dip.data_nascita) : 'Non inserita');
+
+  aggiungiContatto(target, dip);
+
+  const squadre = await db.from('squadre')
+    .select('servizio_id')
+    .eq('dipendente_id', utenteId);
+
+  if (squadre.error) {
+    paragraph($('storicoMioProfilo'),
+      'Errore: ' + errorText(squadre.error));
+    return;
+  }
+
+  const ids = [...new Set(
+    (squadre.data || []).map(x => x.servizio_id)
+  )];
+
+  if (!ids.length) {
+    disegnaStoricoProfilo();
+    return;
+  }
+
+  const servizi = await db.from('servizi')
+    .select('id,tipo_servizio,data_servizio,agenzia,stato_servizio')
+    .in('id', ids)
+    .eq('stato_servizio', 'svolto')
+    .order('data_servizio', {ascending: false});
+
+  if (servizi.error) {
+    paragraph($('storicoMioProfilo'),
+      'Errore: ' + errorText(servizi.error));
+    return;
+  }
+
+  storicoProfilo = servizi.data || [];
+  disegnaStoricoProfilo();
+}
 function mostraPagina(pagina) {
   const admin = profile?.ruolo === 'amministratore';
 
@@ -1718,6 +1950,16 @@ function mostraPagina(pagina) {
   show('paginaSquadre', pagina === 'squadre');
   show('paginaCalendario', pagina === 'calendario');
 
+show('paginaRubrica', pagina === 'rubrica');
+show('paginaProfilo', pagina === 'profilo');
+
+if (pagina === 'rubrica') {
+  caricaRubrica();
+}
+
+if (pagina === 'profilo') {
+  caricaMioProfilo();
+}
   if (pagina === 'calendario') {
     caricaCalendario();
   }
