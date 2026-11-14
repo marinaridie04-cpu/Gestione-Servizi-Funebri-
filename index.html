@@ -329,12 +329,14 @@ async function loadServices() {
     return;
   }
 
-  if (!r.data.length) {
-    paragraph(target, 'Nessun servizio visibile.');
-    return;
-  }
-
-  for (const s of r.data) {
+  const serviziVisibili = r.data.filter(
+    s => s.stato_servizio !== 'annullato'
+  );
+if (!serviziVisibili.length) {
+  paragraph(target, 'Nessun servizio attivo o svolto.');
+  return;
+}
+  for (const s of serviziVisibili) {
     const box = document.createElement('div');
     box.className = 'service';
 
