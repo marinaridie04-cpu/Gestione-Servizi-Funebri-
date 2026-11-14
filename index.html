@@ -547,7 +547,7 @@ async function loadTeams() {
 
   const [servizi, nomi] = await Promise.all([
     db.from('servizi')
-      .select('id,data_servizio,tipo_servizio,nome_defunto,ora_ritrovo,luogo_partenza,ora_partenza,ora_servizio,luogo_servizio')
+      .select('id,data_servizio,tipo_servizio,nome_defunto,ora_ritrovo,luogo_partenza,ora_partenza,ora_servizio,luogo_servizio,squadra_completa,carro_funebre,autista_carro,furgone,autista_furgone')
       .in('id', idsServizi),
 
     db.from('profili')
@@ -612,6 +612,64 @@ if ((servizio.tipo_servizio || 'funerale') === 'funerale') {
       } else {
         paragraph(box, '✅ Componente della squadra');
       }
+    }
+
+    line(box, 'Squadra',
+      servizio.squadra_completa
+        ? '✅ Completa'
+        : '⏳ In preparazione');
+
+    if (profile.ruolo === 'amministratore') {
+      const azioniSquadra = document.createElement('div');
+      azioniSquadra.className = 'actions';
+
+      const confermata = !!servizio.squadra_completa;
+
+      azioniSquadra.append(
+        button(
+          confermata
+            ? '🔓 Riapri squadra'
+            : '✅ Conferma squadra completa',
+          'secondary',
+          async () => {
+            if (!confermata && !componenti.length) {
+              alert('La squadra non ha dipendenti.');
+              return;
+            }
+
+            if (!confirm(
+              confermata
+                ? 'Riaprire questa squadra?'
+                : 'Confermare che la squadra è completa?'
+            )) return;
+
+            const dati = confermata
+              ? {
+                  squadra_completa: false,
+                  carro_funebre: null,
+                  autista_carro: null,
+                  furgone: null,
+                  autista_furgone: null
+                }
+              : { squadra_completa: true };
+
+            const r = await db.from('servizi')
+              .update(dati)
+              .eq('id', servizio.id)
+              .select('id');
+
+            if (r.error || !r.data?.length) {
+              alert('Errore: ' +
+                (r.error ? errorText(r.error) : 'Modifica non autorizzata'));
+              return;
+            }
+
+            await loadTeams();
+          }
+        )
+      );
+
+      box.append(azioniSquadra);
     }
 
     target.append(box);
