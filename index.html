@@ -1386,7 +1386,19 @@ async function caricaAnagrafica() {
 
     if (dip.foto_url) {
       const foto = document.createElement('img');
-      foto.src = dip.foto_url;
+      
+if (dip.foto_url.startsWith('https://')) {
+  foto.src = dip.foto_url;
+} else {
+  const risultatoFoto = await db.storage
+    .from('foto-dipendenti')
+    .createSignedUrl(dip.foto_url, 3600);
+
+  if (!risultatoFoto.error && risultatoFoto.data?.signedUrl) {
+    foto.src = risultatoFoto.data.signedUrl;
+  }
+}
+
       foto.alt = 'Foto dipendente';
       foto.style.width = '90px';
       foto.style.height = '90px';
@@ -1480,11 +1492,45 @@ async function modificaAnagrafica(dip, box) {
     'date'
   );
 
-  const foto = campo(
-    'Link della foto profilo',
-    dip.foto_url,
-    'url'
-  );
+  
+const labelFoto = document.createElement('label');
+labelFoto.textContent = '📸 Foto del dipendente';
+
+const fotoFile = document.createElement('input');
+fotoFile.type = 'file';
+fotoFile.accept = 'image/jpeg,image/png,image/webp';
+
+form.append(labelFoto, fotoFile);
+
+const anteprima = document.createElement('img');
+anteprima.style.width = '100px';
+anteprima.style.height = '100px';
+anteprima.style.objectFit = 'cover';
+anteprima.style.borderRadius = '50%';
+anteprima.style.marginTop = '10px';
+anteprima.style.display = 'none';
+form.append(anteprima);
+
+fotoFile.onchange = () => {
+  const file = fotoFile.files?.[0];
+  if (!file) return;
+
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    alert('Seleziona una foto JPG, PNG o WebP.');
+    fotoFile.value = '';
+    return;
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    alert('La foto non deve superare 2 MB.');
+    fotoFile.value = '';
+    return;
+  }
+
+  anteprima.src = URL.createObjectURL(file);
+  anteprima.style.display = 'block';
+  anteprima.onload = () => URL.revokeObjectURL(anteprima.src);
+};
 
   const cf = campo(
     'Codice fiscale',
@@ -1567,12 +1613,44 @@ async function modificaAnagrafica(dip, box) {
     salva.disabled = true;
 
     try {
+      
+let percorsoFoto = dip.foto_url || null;
+
+const file = fotoFile.files?.[0];
+
+if (file) {
+  const tipi = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp'
+  };
+
+  if (!tipi[file.type] || file.size > 2 * 1024 * 1024) {
+    throw new Error('Foto non valida o superiore a 2 MB.');
+  }
+
+  const nomeFile =
+    dip.id + '/' + crypto.randomUUID() + '.' + tipi[file.type];
+
+  const caricamento = await db.storage
+    .from('foto-dipendenti')
+    .upload(nomeFile, file, {
+      contentType: file.type,
+      upsert: false
+    });
+
+  if (caricamento.error) {
+    throw caricamento.error;
+  }
+
+  percorsoFoto = nomeFile;
+}
       const datiPubblici = {
         nome: nome.value.trim(),
         cognome: cognome.value.trim(),
         telefono: telefono.value.trim() || null,
         data_nascita: nascita.value || null,
-        foto_url: foto.value.trim() || null,
+        foto_url: percorsoFoto,
         attivo: stato.value === 'true'
       };
 
