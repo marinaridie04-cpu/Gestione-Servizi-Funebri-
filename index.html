@@ -54,7 +54,24 @@ header {
 </style>
 </head>
 <body>
-<header><h1>🚐 Gestione Servizi Funebri</h1><p>Organizzazione dei servizi e del personale</p></header>
+  
+<header>
+  <button id="menuButton" class="menu-button hidden" type="button" aria-label="Apri menu">☰</button>
+  <h1>🚐 Gestione Servizi Funebri</h1>
+  <p>Organizzazione dei servizi e del personale</p>
+</header>
+
+<div id="menuOverlay" class="menu-overlay hidden"></div>
+
+<nav id="menuPanel" class="menu-panel hidden">
+  <h2>☰ Menu</h2>
+  <button id="chiudiMenu" type="button">✕ Chiudi menu</button>
+  <button type="button" data-dest="servicesList">🏠 Home e servizi</button>
+  <button type="button" data-dest="servicesList">📅 Calendario (prossimamente)</button>
+  <button type="button" data-dest="servicesList">👥 Anagrafica (prossimamente)</button>
+  <button type="button" data-dest="requestsList">📨 Richieste disponibilità</button>
+  <button type="button" data-dest="teamsList">✅ Le mie squadre</button>
+</nav>
 <main>
 <section id="setup" class="card hidden"><h2>Configurazione necessaria</h2><p>Inserisci nel codice l'URL del progetto Supabase e la sua Publishable key. Non inserire mai la Secret key.</p></section>
 <section id="loginSection" class="card hidden"><h2>🔐 Accesso personale</h2><form id="loginForm"><label>Email</label><input id="email" type="email" autocomplete="username" required><label>Password</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" type="submit">Accedi</button></form><p id="loginMessage" class="status hidden" role="status"></p></section>
@@ -184,9 +201,9 @@ $('cancelEdit').onclick=clearForm;
 function dateIt(s){return s?String(s).split('-').reverse().join('/'):'—'}
 function button(label,cls,fn){let b=document.createElement('button');b.type='button';b.className=cls;b.textContent=label;b.onclick=fn;return b}
 async function start(){if(!validConfig || !window.supabase){show('setup',true);return}db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);const result=await db.auth.getSession();if(result.error){setMessage('loginMessage',errorText(result.error));show('loginSection',true);return}await renderAuth(result.data.session)}
-async function renderAuth(s){session=s;show('loginSection',!s);show('appSection',false);if(!s)return;const result=await db.from('profili').select('nome,cognome,ruolo').eq('id',s.user.id).maybeSingle();if(result.error||!result.data){await db.auth.signOut();show('loginSection',true);setMessage('loginMessage','Profilo non autorizzato o non configurato.');return}profile=result.data;$('welcome').textContent='Accesso: '+profile.nome+' '+profile.cognome+' — '+profile.ruolo;show('loginSection',false);show('appSection',true);show('adminSection',profile.ruolo==='amministratore');show('invitiSection',profile.ruolo==='amministratore');await loadAll()}
+async function renderAuth(s){session=s;show('menuButton', !!s);show('loginSection',!s);show('appSection',false);if(!s)return;const result=await db.from('profili').select('nome,cognome,ruolo').eq('id',s.user.id).maybeSingle();if(result.error||!result.data){await db.auth.signOut();show('loginSection',true);setMessage('loginMessage','Profilo non autorizzato o non configurato.');return}profile=result.data;$('welcome').textContent='Accesso: '+profile.nome+' '+profile.cognome+' — '+profile.ruolo;show('loginSection',false);show('appSection',true);show('adminSection',profile.ruolo==='amministratore');show('invitiSection',profile.ruolo==='amministratore');await loadAll()}
 $('loginForm').onsubmit=async(e)=>{e.preventDefault();setMessage('loginMessage','Accesso in corso...');const r=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});$('password').value='';if(r.error){setMessage('loginMessage',errorText(r.error));return}setMessage('loginMessage','');await renderAuth(r.data.session)};
-$('logout').onclick=async()=>{await db.auth.signOut();profile=null;session=null;show('appSection',false);show('loginSection',true)};
+$('logout').onclick=async()=>{await db.auth.signOut();show('menuButton', false);chiudiMenu();profile=null;session=null;show('appSection',false);show('loginSection',true)};
 async function loadAll(){await Promise.all([loadServices(),loadRequests(),loadTeams(),caricaInviti()])}
 async function loadServices() {
   const target = $('servicesList');
@@ -963,6 +980,31 @@ $('inviaRichieste').onclick=async()=>{
     btn.disabled=false;
   }
 };
+  
+function apriMenu() {
+  show('menuPanel', true);
+  show('menuOverlay', true);
+}
+
+function chiudiMenu() {
+  show('menuPanel', false);
+  show('menuOverlay', false);
+}
+
+$('menuButton').onclick = apriMenu;
+$('chiudiMenu').onclick = chiudiMenu;
+$('menuOverlay').onclick = chiudiMenu;
+
+document.querySelectorAll('#menuPanel [data-dest]')
+  .forEach(btn => {
+    btn.onclick = () => {
+      chiudiMenu();
+      const destinazione = $(btn.dataset.dest);
+      if (destinazione) {
+        destinazione.scrollIntoView({behavior:'smooth'});
+      }
+    };
+  });
 start();
 </script>
 </body>
