@@ -6,6 +6,51 @@
 <title>Gestione Servizi Funebri</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f2f5fa;color:#17243a;font-family:Arial,sans-serif}header{background:#203b66;color:white;padding:23px 16px;text-align:center}header h1{font-size:23px;margin:0 0 7px}header p{font-size:14px;margin:0;color:#dfebfa}main{max-width:720px;margin:auto;padding:16px}.card{background:white;border-radius:15px;padding:20px;margin-bottom:15px;box-shadow:0 2px 9px #0001}h2{font-size:21px;margin:0 0 18px}h3{font-size:17px}label{display:block;font-size:14px;font-weight:bold;margin:14px 0 6px}input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:12px;font:inherit;color:#17243a;background:white}textarea{min-height:95px}button{border:0;border-radius:9px;padding:13px 15px;font-size:15px;font-weight:bold;cursor:pointer}.primary{background:#203b66;color:white;width:100%;margin-top:17px}.secondary{background:#e7edf6;color:#203b66}.danger{background:#fee2e2;color:#991b1b}.hidden{display:none!important}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}.actions button{flex:1}.service{padding:15px;border:1px solid #e1e7f0;border-radius:12px;margin:12px 0}.service p{line-height:1.5;overflow-wrap:anywhere}.muted{font-size:13px;color:#64748b}.status{background:#f2f5fa;border-radius:9px;padding:12px;white-space:pre-wrap}.dangerText{color:#9b1c1c}#logout{margin-top:12px} 
+/* MENU DI NAVIGAZIONE */
+.menu-button {
+  position: absolute;
+  left: 15px;
+  top: 19px;
+  background: transparent;
+  color: white;
+  font-size: 28px;
+  padding: 6px 10px;
+}
+
+header {
+  position: relative;
+  padding-left: 65px;
+  padding-right: 45px;
+}
+
+.menu-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: min(310px, 85vw);
+  height: 100dvh;
+  background: white;
+  z-index: 1001;
+  padding: 25px 18px;
+  overflow-y: auto;
+  box-shadow: 4px 0 20px #0003;
+}
+
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: #0008;
+  z-index: 1000;
+}
+
+.menu-panel button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: #f2f5fa;
+  color: #203b66;
+  margin: 10px 0;
+}
 </style>
 </head>
 <body>
