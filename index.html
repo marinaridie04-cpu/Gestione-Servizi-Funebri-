@@ -603,7 +603,7 @@ const r = await query.order('aggiornata_il', {
   )];
 
   const servizi = await db.from('servizi')
-    .select('id,data_servizio,tipo_servizio,nome_defunto,luogo_partenza,luogo_servizio')
+    .select('id,data_servizio,tipo_servizio,nome_defunto,luogo_partenza,luogo_servizio,agenzia')
     .in('id', idsServizi);
 
   if (servizi.error) {
@@ -655,6 +655,8 @@ const r = await query.order('aggiornata_il', {
 
   line(box, 'Nome del defunto',
     s.nome_defunto || 'Non indicato');
+
+  line(box, 'Agenzia', s.agenzia || 'Da assegnare');
 
   line(box, 'Luogo',
     tipo === 'funerale'
@@ -797,7 +799,7 @@ async function loadTeams() {
 
   const [servizi, nomi] = await Promise.all([
     db.from('servizi')
-      .select('id,data_servizio,tipo_servizio,nome_defunto,ora_ritrovo,luogo_partenza,ora_partenza,ora_servizio,luogo_servizio,squadra_completa,carro_funebre,autista_carro,furgone,autista_furgone')
+      .select('id,data_servizio,tipo_servizio,nome_defunto,agenzia,ora_ritrovo,luogo_partenza,ora_partenza,ora_servizio,luogo_servizio,squadra_completa,carro_funebre,autista_carro,furgone,autista_furgone')
       .in('id', idsServizi),
 
     db.from('profili')
@@ -841,6 +843,9 @@ async function loadTeams() {
 
 line(box, 'Nome del defunto',
   servizio.nome_defunto || 'Non indicato');  
+    
+line(box, 'Agenzia', servizio.agenzia || 'Da assegnare');
+
 if ((servizio.tipo_servizio || 'funerale') === 'funerale') {
   line(box, 'Ora di ritrovo', servizio.ora_ritrovo);
   line(box, 'Luogo di partenza', servizio.luogo_partenza);
@@ -1062,7 +1067,7 @@ async function caricaInviti(){
   elenco.replaceChildren();
 
   const [servizi,dipendenti]=await Promise.all([
-    db.from('servizi').select('id,data_servizio,tipo_servizio,nome_defunto').order('data_servizio'),
+    db.from('servizi').select('id,data_servizio,tipo_servizio,nome_defunto,agenzia').order('data_servizio'),
     db.from('profili').select('id,nome,cognome').eq('ruolo','dipendente')
   ]);
 
@@ -1082,12 +1087,14 @@ for (const s of servizi.data) {
   const tipo = s.tipo_servizio || 'funerale';
   const defunto = s.nome_defunto || 'Nome non inserito';
 
-  sel.add(new Option(
-    (nomi[tipo] || tipo) +
-    ' — ' + defunto +
-    ' — ' + dateIt(s.data_servizio),
-    s.id
-  ));
+sel.add(new Option(
+  (nomi[tipo] || tipo) +
+  ' — ' + (s.agenzia || 'Da assegnare') +
+  ' — ' + defunto +
+  ' — ' + dateIt(s.data_servizio),
+  s.id
+));
+
 }
 
   if(!dipendenti.data.length){
@@ -1320,6 +1327,8 @@ function mostraServiziGiorno(data) {
 
     line(box, 'Tipo', s.tipo_servizio || 'funerale');
     line(box, 'Defunto', s.nome_defunto || 'Non indicato');
+    line(box, 'Agenzia', s.agenzia || 'Da assegnare');
+
 
     const funerale = (s.tipo_servizio || 'funerale') === 'funerale';
 
