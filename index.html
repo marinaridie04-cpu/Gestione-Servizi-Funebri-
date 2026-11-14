@@ -254,12 +254,11 @@ header {
   <h3 id="giornoSelezionato">Seleziona un giorno</h3>
   <div id="serviziGiorno"></div>
 </section>
-
 <section id="paginaAnagrafica" class="card hidden">
   <h2>👥 Anagrafica dipendenti</h2>
-  <p>Qui inseriremo la gestione del personale.</p>
+  <p class="muted">Gestione del personale — solo amministratore</p>
+  <div id="elencoAnagrafica"></div>
 </section>
-
 <p class="muted">Versione di prova. Non utilizzare dati reali finché accessi e permessi non sono stati verificati con più account.</p>
 </section>
 </main>
@@ -1354,6 +1353,69 @@ $('meseSuccessivo').onclick = async () => {
   meseCalendario.setMonth(meseCalendario.getMonth() + 1);
   await caricaCalendario();
 };
+  
+async function caricaAnagrafica() {
+  if (profile?.ruolo !== 'amministratore') return;
+
+  const target = $('elencoAnagrafica');
+  target.replaceChildren();
+
+  const r = await db.from('profili')
+    .select('id,nome,cognome,telefono,data_nascita,foto_url,attivo')
+    .order('cognome');
+
+  if (r.error) {
+    paragraph(target, 'Errore: ' + errorText(r.error));
+    return;
+  }
+
+  if (!r.data.length) {
+    paragraph(target, 'Nessun dipendente presente.');
+    return;
+  }
+
+  for (const dip of r.data) {
+    const box = document.createElement('div');
+    box.className = 'service';
+
+    const titolo = document.createElement('h3');
+    titolo.textContent =
+      (dip.nome || '') + ' ' + (dip.cognome || '');
+    box.append(titolo);
+
+    if (dip.foto_url) {
+      const foto = document.createElement('img');
+      foto.src = dip.foto_url;
+      foto.alt = 'Foto dipendente';
+      foto.style.width = '90px';
+      foto.style.height = '90px';
+      foto.style.objectFit = 'cover';
+      foto.style.borderRadius = '50%';
+      box.append(foto);
+    }
+
+    line(box, 'Telefono', dip.telefono || 'Da inserire');
+    line(box, 'Data di nascita',
+      dip.data_nascita ? dateIt(dip.data_nascita) : 'Da inserire');
+    line(box, 'Stato',
+      dip.attivo === false ? 'Non attivo' : 'Attivo');
+
+    if (dip.telefono) {
+      const numero = dip.telefono.replace(/\D/g, '');
+      const internazionale = numero.startsWith('39')
+        ? numero : '39' + numero;
+
+      const link = document.createElement('a');
+      link.href = 'https://wa.me/' + internazionale;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = '💬 Contatta su WhatsApp';
+      box.append(link);
+    }
+
+    target.append(box);
+  }
+}
 function mostraPagina(pagina) {
   const admin = profile?.ruolo === 'amministratore';
 
@@ -1385,6 +1447,10 @@ document.querySelectorAll('#menuPanel [data-page]')
         profile?.ruolo !== 'amministratore'
       ) {
         chiudiMenu();
+      
+if (pagina === 'anagrafica' && admin) {
+  caricaAnagrafica();
+}
         alert('Sezione riservata all’amministratore.');
         return;
       }
