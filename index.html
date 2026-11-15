@@ -269,7 +269,8 @@ header {
 <section id="paginaProfilo" class="card hidden">
   <h2>👤 Il mio profilo</h2>
   <div id="datiMioProfilo"></div>
-
+<h3>📊 Le mie statistiche</h3>
+<div id="statisticheMioProfilo"></div>
   <h3>📁 I miei servizi svolti</h3>
 
   <label for="filtroAgenziaProfilo">Filtra per agenzia</label>
@@ -1926,9 +1927,71 @@ async function caricaRubrica() {
 
 let storicoProfilo = [];
 
+function disegnaStatisticheProfilo() {
+  const target = $('statisticheMioProfilo');
+  target.replaceChildren();
+
+  const agenzie = [
+    'P.A. Carrara',
+    'O.F. La Ginestra',
+    'O.F. Bedonia'
+  ];
+
+  const tipi = [
+    ['funerale', '⚰️ Funerali'],
+    ['trasferimento', '🚐 Trasferimenti'],
+    ['vestizione', '👔 Vestizioni']
+  ];
+
+  let totale = 0;
+
+  for (const agenzia of agenzie) {
+    const box = document.createElement('div');
+    box.className = 'service';
+
+    const titolo = document.createElement('h3');
+    titolo.textContent = agenzia;
+    box.append(titolo);
+
+    let totaleAgenzia = 0;
+
+    for (const [tipo, etichetta] of tipi) {
+      const numero = storicoProfilo.filter(s =>
+        s.agenzia === agenzia &&
+        s.tipo_servizio === tipo
+      ).length;
+
+      line(box, etichetta, String(numero));
+      totaleAgenzia += numero;
+    }
+
+    line(box, 'Totale agenzia', String(totaleAgenzia));
+    totale += totaleAgenzia;
+
+    target.append(box);
+  }
+
+  const senzaAgenzia = storicoProfilo.filter(s =>
+    !agenzie.includes(s.agenzia)
+  ).length;
+
+  if (senzaAgenzia) {
+    line(target, 'Servizi senza agenzia',
+      String(senzaAgenzia));
+    totale += senzaAgenzia;
+  }
+
+  const riepilogo = document.createElement('h3');
+  riepilogo.textContent =
+    '✅ Totale servizi svolti: ' + totale;
+
+  target.append(riepilogo);
+}
+
 function disegnaStoricoProfilo() {
   const target = $('storicoMioProfilo');
   target.replaceChildren();
+  disegnaStatisticheProfilo();
 
   const filtro = $('filtroAgenziaProfilo').value;
 
