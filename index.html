@@ -1463,8 +1463,115 @@ if (dip.foto_url.startsWith('https://')) {
     modifica.style.marginTop = '15px';
 
     box.append(modifica);
+    
+const statistiche = button(
+  '📊 Statistiche servizi',
+  'secondary',
+  () => mostraStatisticheDipendente(dip, box)
+);
+
+statistiche.style.width = '100%';
+statistiche.style.marginTop = '10px';
+
+box.append(statistiche);
     target.append(box);
   }
+}
+
+async function mostraStatisticheDipendente(dip, box) {
+  if (profile?.ruolo !== 'amministratore') return;
+
+  const precedente = box.querySelector('.statisticheDipendente');
+
+  if (precedente) {
+    precedente.remove();
+    return;
+  }
+
+  const contenitore = document.createElement('div');
+  contenitore.className = 'statisticheDipendente';
+  contenitore.style.marginTop = '18px';
+
+  paragraph(contenitore, 'Caricamento statistiche...');
+  box.append(contenitore);
+
+  const r = await db.rpc('statistiche_dipendente', {
+    p_dipendente: dip.id
+  });
+
+  contenitore.replaceChildren();
+
+  if (r.error) {
+    paragraph(contenitore, 'Errore: ' + errorText(r.error));
+    return;
+  }
+
+  const titolo = document.createElement('h3');
+  titolo.textContent = '📊 Statistiche — ' +
+    dip.nome + ' ' + dip.cognome;
+  contenitore.append(titolo);
+
+  const agenzie = [
+    'P.A. Carrara',
+    'O.F. La Ginestra',
+    'O.F. Bedonia'
+  ];
+
+  const tipi = [
+    ['funerale', '⚰️ Funerali'],
+    ['trasferimento', '🚐 Trasferimenti'],
+    ['vestizione', '👔 Vestizioni']
+  ];
+
+  let totaleGenerale = 0;
+
+  for (const agenzia of agenzie) {
+    const sezione = document.createElement('div');
+    sezione.className = 'service';
+
+    const h = document.createElement('h3');
+    h.textContent = agenzia;
+    sezione.append(h);
+
+    let totaleAgenzia = 0;
+
+    for (const [tipo, etichetta] of tipi) {
+      const numero = (r.data || [])
+        .filter(x =>
+          x.agenzia === agenzia &&
+          x.tipo_servizio === tipo
+        )
+        .reduce((somma, x) =>
+          somma + Number(x.totale || 0), 0
+        );
+
+      line(sezione, etichetta, String(numero));
+      totaleAgenzia += numero;
+    }
+
+    line(sezione, 'Totale agenzia', String(totaleAgenzia));
+    totaleGenerale += totaleAgenzia;
+
+    contenitore.append(sezione);
+  }
+
+  const senzaAgenzia = (r.data || [])
+    .filter(x => !agenzie.includes(x.agenzia))
+    .reduce((somma, x) =>
+      somma + Number(x.totale || 0), 0
+    );
+
+  if (senzaAgenzia) {
+    line(contenitore, 'Servizi senza agenzia assegnata',
+      String(senzaAgenzia));
+    totaleGenerale += senzaAgenzia;
+  }
+
+  const totale = document.createElement('h3');
+  totale.textContent =
+    '✅ Totale servizi svolti: ' + totaleGenerale;
+
+  contenitore.append(totale);
 }
 
 async function modificaAnagrafica(dip, box) {
