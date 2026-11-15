@@ -130,9 +130,9 @@ header {
   <h2>☰ Menu</h2>
   <button id="chiudiMenu" type="button">✕ Chiudi menu</button>
 
-  <button type="button" data-page="home">
-    🏠 Home e servizi
-  </button>
+<button type="button" data-page="home">
+  🚐 Gestione servizi
+</button>
 
   <button type="button" data-page="calendario">
     📅 Calendario
@@ -149,13 +149,6 @@ header {
 <button type="button" data-page="profilo">
   👤 Il mio profilo
 </button>
-  <button type="button" data-page="richieste">
-    📨 Richieste disponibilità
-  </button>
-
-  <button type="button" data-page="squadre">
-    ✅ Le mie squadre
-  </button>
 </nav>
 <main>
 <section id="setup" class="card hidden"><h2>Configurazione necessaria</h2><p>Inserisci nel codice l'URL del progetto Supabase e la sua Publishable key. Non inserire mai la Secret key.</p></section>
@@ -1947,19 +1940,22 @@ async function caricaMioProfilo() {
 function mostraPagina(pagina) {
   const admin = profile?.ruolo === 'amministratore';
 
+document.querySelector('[data-page="anagrafica"]')
+  .classList.toggle('hidden', !admin);
+
+document.querySelector('[data-page="rubrica"]')
+  .classList.toggle('hidden', admin);
   show('adminSection', pagina === 'home' && admin);
   show('paginaServizi', pagina === 'home');
-
-  show('invitiSection', pagina === 'richieste' && admin);
-  show('paginaRichieste', pagina === 'richieste');
-
-  show('paginaSquadre', pagina === 'squadre');
+  show('invitiSection', pagina === 'home' && admin);
+  show('paginaRichieste', pagina === 'home');
+  show('paginaSquadre', pagina === 'home');
   show('paginaCalendario', pagina === 'calendario');
 
-show('paginaRubrica', pagina === 'rubrica');
+show('paginaRubrica', pagina === 'rubrica' && !admin);
 show('paginaProfilo', pagina === 'profilo');
 
-if (pagina === 'rubrica') {
+if (pagina === 'rubrica' && !admin) {
   caricaRubrica();
 }
 
