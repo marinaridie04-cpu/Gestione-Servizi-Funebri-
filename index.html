@@ -1392,7 +1392,7 @@ async function caricaAnagrafica() {
   target.replaceChildren();
 
   const r = await db.from('profili')
-    .select('id,nome,cognome,telefono,data_nascita,foto_url,attivo')
+    .select('id,nome,cognome,email_contatto,telefono,data_nascita,foto_url,attivo')
     .order('cognome');
 
   if (r.error) {
@@ -1436,7 +1436,7 @@ if (dip.foto_url.startsWith('https://')) {
       foto.style.borderRadius = '50%';
       box.append(foto);
     }
-
+    line(box, 'Email', dip.email_contatto || 'Da inserire');
     line(box, 'Telefono', dip.telefono || 'Da inserire');
     line(box, 'Data di nascita',
       dip.data_nascita
@@ -1515,6 +1515,11 @@ async function modificaAnagrafica(dip, box) {
 
   const nome = campo('Nome', dip.nome);
   const cognome = campo('Cognome', dip.cognome);
+  const emailContatto = campo(
+  'Email di contatto',
+  dip.email_contatto,
+  'email'
+);
   const telefono = campo('Telefono', dip.telefono, 'tel');
   const nascita = campo(
     'Data di nascita',
@@ -1678,6 +1683,7 @@ if (file) {
       const datiPubblici = {
         nome: nome.value.trim(),
         cognome: cognome.value.trim(),
+        email_contatto: emailContatto.value.trim() || null,
         telefono: telefono.value.trim() || null,
         data_nascita: nascita.value || null,
         foto_url: percorsoFoto,
