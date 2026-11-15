@@ -2134,28 +2134,17 @@ async function caricaMioProfilo() {
   disegnaStoricoProfilo();
 }
   
+
 function mostraSottosezioneServizi(sezione) {
   const admin = profile?.ruolo === 'amministratore';
+
   show('tabNuovoServizio', admin);
-  const sezioni = {
-    nuovo: 'adminSection',
-    elenco: 'paginaServizi',
-    richieste: 'paginaRichieste',
-    squadre: 'paginaSquadre'
-  };
+  show('adminSection', admin && sezione === 'nuovo');
+  show('paginaServizi', sezione === 'elenco');
+  show('invitiSection', admin && sezione === 'richieste');
+  show('paginaRichieste', sezione === 'richieste');
+  show('paginaSquadre', sezione === 'squadre');
 
-  
-show('tabServizi', pagina === 'home');
-
-if (pagina === 'home') {
-  mostraSottosezioneServizi('elenco');
-} else {
-  show('adminSection', false);
-  show('paginaServizi', false);
-  show('invitiSection', false);
-  show('paginaRichieste', false);
-  show('paginaSquadre', false);
-}
   document.querySelectorAll('[data-service-tab]')
     .forEach(btn => {
       const attivo = btn.dataset.serviceTab === sezione;
@@ -2171,45 +2160,53 @@ document.querySelectorAll('[data-service-tab]')
       mostraSottosezioneServizi(btn.dataset.serviceTab);
     };
   });
+
 function mostraPagina(pagina) {
   const admin = profile?.ruolo === 'amministratore';
 
-document.querySelector('[data-page="anagrafica"]')
-  .classList.toggle('hidden', !admin);
+  document.querySelector('[data-page="anagrafica"]')
+    .classList.toggle('hidden', !admin);
 
-document.querySelector('[data-page="rubrica"]')
-  .classList.toggle('hidden', admin);
-  show('adminSection', pagina === 'home' && admin);
-  show('paginaServizi', pagina === 'home');
-  show('invitiSection', pagina === 'home' && admin);
-  show('paginaRichieste', pagina === 'home');
-  show('paginaSquadre', pagina === 'home');
+  document.querySelector('[data-page="rubrica"]')
+    .classList.toggle('hidden', admin);
+
+  show('tabServizi', pagina === 'home');
+
+  if (pagina === 'home') {
+    mostraSottosezioneServizi('elenco');
+  } else {
+    show('adminSection', false);
+    show('paginaServizi', false);
+    show('invitiSection', false);
+    show('paginaRichieste', false);
+    show('paginaSquadre', false);
+  }
+
   show('paginaCalendario', pagina === 'calendario');
+  show('paginaRubrica', pagina === 'rubrica' && !admin);
+  show('paginaProfilo', pagina === 'profilo');
+  show('paginaAnagrafica', pagina === 'anagrafica' && admin);
 
-show('paginaRubrica', pagina === 'rubrica' && !admin);
-show('paginaProfilo', pagina === 'profilo');
-
-if (pagina === 'rubrica' && !admin) {
-  caricaRubrica();
-}
-
-if (pagina === 'profilo') {
-  caricaMioProfilo();
-}
   if (pagina === 'calendario') {
     caricaCalendario();
   }
 
-  show('paginaAnagrafica',
-    pagina === 'anagrafica' && admin);
+  if (pagina === 'rubrica' && !admin) {
+    caricaRubrica();
+  }
+
+  if (pagina === 'profilo') {
+    caricaMioProfilo();
+  }
 
   if (pagina === 'anagrafica' && admin) {
     caricaAnagrafica();
   }
 
   chiudiMenu();
-  window.scrollTo({top: 0, behavior: 'smooth'});
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
 
 document.querySelectorAll('#menuPanel [data-page]')
   .forEach(btn => {
