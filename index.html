@@ -155,6 +155,32 @@ header {
 <section id="loginSection" class="card hidden"><h2>🔐 Accesso personale</h2><form id="loginForm"><label>Email</label><input id="email" type="email" autocomplete="username" required><label>Password</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" type="submit">Accedi</button></form><p id="loginMessage" class="status hidden" role="status"></p></section>
 <section id="appSection" class="hidden">
 <div class="card"><div id="welcome"></div><button id="logout" class="secondary" type="button">Esci dall'account</button></div>
+  
+<div id="tabServizi" class="card hidden">
+  <h2>🚐 Gestione servizi</h2>
+
+  <div class="actions">
+    <button id="tabNuovoServizio" type="button"
+      class="secondary hidden" data-service-tab="nuovo">
+      ➕ Nuovo servizio
+    </button>
+
+    <button type="button"
+      class="secondary" data-service-tab="elenco">
+      📋 Elenco servizi
+    </button>
+
+    <button type="button"
+      class="secondary" data-service-tab="richieste">
+      📨 Disponibilità
+    </button>
+
+    <button type="button"
+      class="secondary" data-service-tab="squadre">
+      👥 Squadre
+    </button>
+  </div>
+</div>
 <section id="adminSection" class="card hidden">
 
 <h2>📋 Nuovo servizio</h2>
@@ -2107,6 +2133,44 @@ async function caricaMioProfilo() {
   storicoProfilo = servizi.data || [];
   disegnaStoricoProfilo();
 }
+  
+function mostraSottosezioneServizi(sezione) {
+  const admin = profile?.ruolo === 'amministratore';
+  show('tabNuovoServizio', admin);
+  const sezioni = {
+    nuovo: 'adminSection',
+    elenco: 'paginaServizi',
+    richieste: 'paginaRichieste',
+    squadre: 'paginaSquadre'
+  };
+
+  
+show('tabServizi', pagina === 'home');
+
+if (pagina === 'home') {
+  mostraSottosezioneServizi('elenco');
+} else {
+  show('adminSection', false);
+  show('paginaServizi', false);
+  show('invitiSection', false);
+  show('paginaRichieste', false);
+  show('paginaSquadre', false);
+}
+  document.querySelectorAll('[data-service-tab]')
+    .forEach(btn => {
+      const attivo = btn.dataset.serviceTab === sezione;
+      btn.classList.toggle('primary', attivo);
+      btn.classList.toggle('secondary', !attivo);
+      btn.setAttribute('aria-pressed', String(attivo));
+    });
+}
+
+document.querySelectorAll('[data-service-tab]')
+  .forEach(btn => {
+    btn.onclick = () => {
+      mostraSottosezioneServizi(btn.dataset.serviceTab);
+    };
+  });
 function mostraPagina(pagina) {
   const admin = profile?.ruolo === 'amministratore';
 
